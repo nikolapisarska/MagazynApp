@@ -3,6 +3,7 @@ using MagazynApp.Model;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Maui.Storage;
 
 namespace MagazynApp.Services;
 

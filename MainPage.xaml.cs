@@ -1,4 +1,6 @@
-﻿using MagazynApp.ViewModels;
+﻿using System;
+using MagazynApp.ViewModels;
+using Microsoft.Maui.Controls;
 
 namespace MagazynApp;
 
@@ -7,6 +9,8 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+        // Sprawdź, czy w pliku XAML nie masz przypisanego <vm:MainViewModel /> w BindingContext,
+        // jeśli masz, tę linię poniżej można zakomentować, żeby nie tworzyć ViewModelu dwa razy.
         BindingContext = new MainViewModel();
     }
 
@@ -30,13 +34,25 @@ public partial class MainPage : ContentPage
         base.OnDisappearing();
     }
 
+    // Ta metoda wykonuje się automatycznie, gdy użytkownik/skaner kliknie Enter
+    private void OnScanEntryCompleted(object sender, EventArgs e)
+    {
+        // Wykorzystujemy krótki moment opóźnienia (80 ms), 
+        // aby system operacyjny zdążył przetworzyć pojawienie się sekcji wymiarów,
+        // a następnie brutalnie kradniemy fokus z powrotem do skanera.
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(80), () =>
+        {
+            ScanEntry.Focus();
+        });
+    }
+
     private async void OnSaveAndCloseClicked(object sender, EventArgs e)
     {
         if (BindingContext is MainViewModel vm)
         {
             await vm.SaveAndCloseBoxAsync();
             
-            // Po zapisaniu kartonu, przywracamy fokus na skaner
+            // Po zapisaniu i zamknięciu kartonu, przywracamy fokus na skaner
             ScanEntry.Focus();
         }
     }

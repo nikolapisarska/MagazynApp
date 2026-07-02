@@ -12,7 +12,7 @@
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="20" MaximumWidthRequest="550" HorizontalOptions="Center">
             
-            <!-- Czysty nagłówek bez zbędnych guzików -->
+            <!-- Czysty nagłówek ze zdarzeniem Completed -->
             <Border StrokeThickness="2" Stroke="{StaticResource Primary}" Padding="15" StrokeShape="RoundRectangle 10">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Pole Skanera (Zeskanuj Karton lub Produkt):" FontAttributes="Bold" FontSize="14" />
@@ -20,6 +20,7 @@
                     <Entry x:Name="ScanEntry"
                            Text="{Binding ScanInput}"
                            ReturnCommand="{Binding ProcessScanCommand}"
+                           Completed="OnScanEntryCompleted"
                            Placeholder="Wpisz/Zeskanuj kod kreskowy..."
                            FontSize="18"
                            BackgroundColor="#F5F5F5"
