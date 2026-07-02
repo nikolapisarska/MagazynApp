@@ -1,36 +1,103 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="MagazynApp.MainPage">
+             xmlns:vm="clr-namespace:MagazynApp.ViewModels"
+             x:Class="MagazynApp.MainPage"
+             Title="Panel Magazynowy">
+
+    <!-- Naprawa błędu BindingContext -->
+    <ContentPage.BindingContext>
+        <vm:MainViewModel />
+    </ContentPage.BindingContext>
 
     <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Image
-                Source="dotnet_bot.png"
-                HeightRequest="185"
-                Aspect="AspectFit"
-                SemanticProperties.Description="dot net bot in a submarine number ten" />
+        <VerticalStackLayout Padding="20" Spacing="20" MaximumWidthRequest="550" HorizontalOptions="Center">
+            
+            <!-- Naprawa błędu RoundRectangleCorners (używamy StrokeShape) -->
+            <Border StrokeThickness="2" Stroke="{StaticResource Primary}" Padding="15" StrokeShape="RoundRectangle 10">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Pole Skanera (Zeskanuj Karton lub Produkt):" FontAttributes="Bold" FontSize="14" />
+                    
+                    <Entry x:Name="ScanEntry"
+                           Text="{Binding ScanInput}"
+                           ReturnCommand="{Binding ProcessScanCommand}"
+                           Placeholder="Wpisz/Zeskanuj kod kreskowy..."
+                           FontSize="18"
+                           BackgroundColor="#F5F5F5"
+                           TextColor="Black"/>
+                </VerticalStackLayout>
+            </Border>
 
-            <Label
-                Text="Hello, World!"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
+            <Label Text="{Binding StatusMessage}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   FontAttributes="Italic"
+                   FontSize="15"
+                   TextColor="{StaticResource Primary}" />
 
-            <Label
-                Text="Welcome to &#10;.NET Multi-platform App UI"
-                Style="{StaticResource SubHeadline}"
-                SemanticProperties.HeadingLevel="Level2"
-                SemanticProperties.Description="Welcome to dot net Multi platform App U I" />
+            <VerticalStackLayout Spacing="15" IsVisible="{Binding IsBoxOpen}">
+                
+                <Label Text="{Binding CurrentBox.BoxCode, StringFormat='📦 Kod kartonu: {0}'}" 
+                       FontSize="22" 
+                       FontAttributes="Bold" 
+                       TextColor="DarkSlateGray"/>
 
-            <Button
-                x:Name="CounterBtn"
-                Text="Click me" 
-                SemanticProperties.Hint="Counts the number of times you click"
-                Clicked="OnCounterClicked"
-                HorizontalOptions="Fill" />
+                <Line Stroke="LightGray" X2="500" HorizontalOptions="Fill" StrokeThickness="1"/>
+
+                <Label Text="Wymiary i waga opakowania:" FontAttributes="Bold" FontSize="14"/>
+                <Grid ColumnDefinitions="*,*" RowDefinitions="*,*" ColumnSpacing="15" RowSpacing="15">
+                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                        <Label Text="Waga (kg):" FontSize="12"/>
+                        <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Weight, Mode=TwoWay}" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4">
+                        <Label Text="Długość (cm):" FontSize="12"/>
+                        <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Length, Mode=TwoWay}" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4">
+                        <Label Text="Szerokość (cm):" FontSize="12"/>
+                        <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Width, Mode=TwoWay}" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4">
+                        <Label Text="Wysokość (cm):" FontSize="12"/>
+                        <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Height, Mode=TwoWay}" />
+                    </VerticalStackLayout>
+                </Grid>
+
+                <Label Text="Zawartość kartonu:" FontAttributes="Bold" FontSize="14" Margin="0,10,0,0"/>
+                
+                <Border StrokeThickness="1" Stroke="LightGray" Padding="5" StrokeShape="RoundRectangle 5">
+                    <CollectionView ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton. Zeskanuj produkty z Graffiti.">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*, Auto" Padding="10">
+                                    <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                        <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="15"/>
+                                        <Label Text="{Binding ProductSku, StringFormat='Indeks: {0}'}" FontSize="12" TextColor="Gray"/>
+                                    </VerticalStackLayout>
+                                    
+                                    <HorizontalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center">
+                                        <Label Text="Sztuk:" VerticalOptions="Center" FontSize="13"/>
+                                        <Entry Text="{Binding Quantity, Mode=TwoWay}" 
+                                               Keyboard="Numeric" 
+                                               WidthRequest="60" 
+                                               HorizontalTextAlignment="Center"/>
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Border>
+
+                <Button Text="Zatwierdź i Zapisz Karton w Bazie"
+                        Clicked="OnSaveAndCloseClicked"
+                        BackgroundColor="#228B22"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        HeightRequest="50"
+                        Margin="0,15,0,0"/>
+            </VerticalStackLayout>
+
         </VerticalStackLayout>
     </ScrollView>
-
 </ContentPage>

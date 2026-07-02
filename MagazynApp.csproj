@@ -63,6 +63,8 @@
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+		<None Remove="produkty.csv" />
+		<MauiAsset Include="produkty.csv" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1621,3 +1621,5 @@
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/stamp/_GenerateJavaStubs.stamp
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/stamp/_GeneratePackageManagerJava.stamp
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/stamp/_ResolveLibraryProjectImports.stamp
+/Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.sourcelink.json
+/Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/assets/produkty.csv
