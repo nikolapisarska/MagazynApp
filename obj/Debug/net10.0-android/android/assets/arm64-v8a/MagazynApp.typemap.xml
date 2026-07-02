@@ -1,0 +1,10 @@
+<api type="debug" assembly-name="MagazynApp" mvid="426406c44d7f4e758b39139dec5ccbf9">
+  <java-to-managed>
+    <entry java-name="crc64d02f14ae4cbe73ad/MainActivity" managed-name="MagazynApp.MainActivity, MagazynApp" managed-type-token-id="33554441" />
+    <entry java-name="crc64d02f14ae4cbe73ad/MainApplication" managed-name="MagazynApp.MainApplication, MagazynApp" managed-type-token-id="33554442" />
+  </java-to-managed>
+  <managed-to-java>
+    <entry java-name="crc64d02f14ae4cbe73ad/MainActivity" managed-name="MagazynApp.MainActivity, MagazynApp" managed-type-token-id="33554441" />
+    <entry java-name="crc64d02f14ae4cbe73ad/MainApplication" managed-name="MagazynApp.MainApplication, MagazynApp" managed-type-token-id="33554442" />
+  </managed-to-java>
+</api>
