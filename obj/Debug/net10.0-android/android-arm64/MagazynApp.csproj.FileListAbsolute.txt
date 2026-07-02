@@ -125,6 +125,7 @@
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.AssemblyInfoInputs.cache
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.AssemblyInfo.cs
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.csproj.CoreCompileInputs.cache
+/Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.sourcelink.json
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/XamlC.stamp
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.dll
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.pdb
@@ -1599,6 +1600,7 @@
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/android/src/mono/MonoPackageManager_Resources.java
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/android/src/net/dot/android/ApplicationRegistration.java
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/assets/AboutAssets.txt
+/Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/assets/produkty.csv
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/assets/OpenSans-Regular.ttf
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/assets/OpenSans-Semibold.ttf
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/android/bin/packaged_resources
@@ -1621,5 +1623,3 @@
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/stamp/_GenerateJavaStubs.stamp
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/stamp/_GeneratePackageManagerJava.stamp
 /Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/stamp/_ResolveLibraryProjectImports.stamp
-/Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/MagazynApp.sourcelink.json
-/Users/nikolina/Desktop/MagazynApp/obj/Debug/net10.0-android/android-arm64/assets/produkty.csv

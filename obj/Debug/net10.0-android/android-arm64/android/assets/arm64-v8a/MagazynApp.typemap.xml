@@ -1,4 +1,4 @@
-<api type="debug" assembly-name="MagazynApp" mvid="d6e8de91b1624965890cc9fc686cd4c2">
+<api type="debug" assembly-name="MagazynApp" mvid="fa776814031e49aaba20342199f5414f">
   <java-to-managed>
     <entry java-name="crc64d02f14ae4cbe73ad/MainActivity" managed-name="MagazynApp.MainActivity, MagazynApp" managed-type-token-id="33554441" />
     <entry java-name="crc64d02f14ae4cbe73ad/MainApplication" managed-name="MagazynApp.MainApplication, MagazynApp" managed-type-token-id="33554442" />

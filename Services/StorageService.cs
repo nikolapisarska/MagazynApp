@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Maui.Storage; // Potrzebne do FileSystem
 
 namespace MagazynApp.Services;
 
@@ -10,35 +11,52 @@ public class StorageService
 {
     private readonly StorageDb _db = new();
 
-    public async Task<bool> ImportFromCsvAsync(string filePath)
+    // Parametr filePath ma teraz wartość domyślną null, co pozwala wywołać metodę bez argumentów
+    public async Task<bool> ImportFromCsvAsync(string? filePath = null)
     {
-        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) 
-            return false;
-
         var productsToImport = new List<Product>();
 
         try
         {
-            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using var reader = new StreamReader(fileStream);
+            Stream stream;
 
-            if (!reader.EndOfStream) 
-                await reader.ReadLineAsync();
-
-            while (!reader.EndOfStream)
+            // SYTUACJA A: Jeśli podano ścieżkę (pobieranie automatyczne z sieci)
+            if (!string.IsNullOrWhiteSpace(filePath))
             {
-                var line = await reader.ReadLineAsync();
-                if (string.IsNullOrWhiteSpace(line)) 
-                    continue;
+                if (!File.Exists(filePath))
+                    return false;
 
-                var parts = line.Split(';');
-                if (parts.Length >= 2)
+                stream = File.OpenRead(filePath);
+            }
+            // SYTUACJA B: Brak ścieżki (start aplikacji i czytanie wbudowanego pliku z Resources/Raw/)
+            else
+            {
+                stream = await FileSystem.OpenAppPackageFileAsync("produkty.csv");
+            }
+
+            using (stream)
+            {
+                using var reader = new StreamReader(stream);
+                
+                // Pominięcie linii nagłówkowej (CodeOrIdGraffiti;Name)
+                if (!reader.EndOfStream) 
+                    await reader.ReadLineAsync();
+
+                while (!reader.EndOfStream)
                 {
-                    productsToImport.Add(new Product
+                    var line = await reader.ReadLineAsync();
+                    if (string.IsNullOrWhiteSpace(line)) 
+                        continue;
+
+                    var parts = line.Split(';');
+                    if (parts.Length >= 2)
                     {
-                        CodeOrIdGraffiti = parts[0].Trim(),
-                        Name = parts[1].Trim()
-                    });
+                        productsToImport.Add(new Product
+                        {
+                            CodeOrIdGraffiti = parts[0].Trim(),
+                            Name = parts[1].Trim()
+                        });
+                    }
                 }
             }
 

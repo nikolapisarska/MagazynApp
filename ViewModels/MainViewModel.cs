@@ -56,6 +56,9 @@ public class MainViewModel : INotifyPropertyChanged
     public MainViewModel()
     {
         ProcessScanCommand = new Command(async () => await ExecuteProcessScanAsync());
+    
+        // WYMUSZENIE INTERFEJSU: Załaduj wbudowany plik CSV przy starcie aplikacji
+        Task.Run(async () => await _storageService.ImportFromCsvAsync());
     }
 
     private async Task ExecuteProcessScanAsync()
@@ -134,48 +137,32 @@ public class MainViewModel : INotifyPropertyChanged
         CurrentBox = null;
         CurrentItems.Clear();
     }
-
-    // Automatyczna metoda sieciowa wywoływana przez timer z MainPage.xaml.cs
-    public async Task DownloadAndImportCsvAutomaticallyAsync()
-    {
-        // 💡 Zmień na swój rzeczywisty adres URL w sieci firmy
-        string csvUrl = "http://twoja-firma.pl/magazyn/produkty.csv"; 
-
-        try
-        {
-            using var httpClient = new HttpClient();
-            httpClient.Timeout = TimeSpan.FromSeconds(15); 
-
-            using var stream = await httpClient.GetStreamAsync(csvUrl);
-
-            var tempPath = Path.Combine(FileSystem.CacheDirectory, "pobrane_produkty.csv");
-            using (var fs = File.Create(tempPath))
-            {
-                await stream.CopyToAsync(fs);
-            }
-
-            bool success = await _storageService.ImportFromCsvAsync(tempPath);
-
-            if (success)
-            {
-                // Aktualizujemy status tylko, gdy pracownik nie kompletuje akurat paczki, 
-                // żeby nie mazać mu informacji o skanowanych produktach
-                if (!IsBoxOpen)
-                {
-                    StatusMessage = " Baza produktów zaktualizowana automatycznie w tle.";
-                }
-            }
-
-            if (File.Exists(tempPath)) File.Delete(tempPath);
-        }
-        catch (Exception ex)
-        {
-            // Błędy sieci cicho logujemy w Riderze, aby nie przerywać pracy magazyniera
-            System.Diagnostics.Debug.WriteLine($"Błąd auto-aktualizacji: {ex.Message}");
-        }
-    }
-
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    // Wywoływane automatycznie przez MainPage przy starcie aplikacji
+    public async Task InitializeLocalDatabaseAsync()
+    {
+        try
+        {
+            // Sprawdzamy, czy produkt "meow" (lub jakikolwiek inny) już istnieje, 
+            // żeby nie katować bazy importem przy każdym wejściu na ekran
+            var testProduct = await _storageService.GetProductByCodeAsync("meow");
+        
+            if (testProduct == null)
+            {
+                if (!IsBoxOpen) StatusMessage = "🔄 Inicjalizacja bazy danych produktów...";
+            
+                // Ładujemy plik produkty.csv prosto z folderu Resources/Raw/
+                bool success = await _storageService.ImportFromCsvAsync(); 
+            
+                if (success && !IsBoxOpen)
+                    StatusMessage = "✅ Wbudowana baza produktów załadowana pomyślnie.";
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Błąd inicjalizacji bazy: {ex.Message}");
+        }
+    }
 }
