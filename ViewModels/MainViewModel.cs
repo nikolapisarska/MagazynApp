@@ -151,13 +151,13 @@ public class MainViewModel : INotifyPropertyChanged
         
             if (testProduct == null)
             {
-                if (!IsBoxOpen) StatusMessage = "🔄 Inicjalizacja bazy danych produktów...";
+                if (!IsBoxOpen) StatusMessage = " Inicjalizacja bazy danych produktów...";
             
                 // Ładujemy plik produkty.csv prosto z folderu Resources/Raw/
                 bool success = await _storageService.ImportFromCsvAsync(); 
             
                 if (success && !IsBoxOpen)
-                    StatusMessage = "✅ Wbudowana baza produktów załadowana pomyślnie.";
+                    StatusMessage = " Wbudowana baza produktów załadowana pomyślnie.";
             }
         }
         catch (Exception ex)
