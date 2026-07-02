@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using SQLite;
 using SQLiteNetExtensions.Attributes; // Opcjonalna biblioteka do łatwych relacji
 
 namespace MagazynApp.Model;
-
 public class Box
 {
-    [PrimaryKey] // Kod kreskowy kartonu musi być unikalnym kluczem
+    [PrimaryKey] 
     public string BoxCode { get; set; } = string.Empty;
     
     public float Height { get; set; }
@@ -16,24 +17,48 @@ public class Box
     public float Length { get; set; }
     public float Weight { get; set; }
 
-    // Ignorujemy tę właściwość w czystym SQLite, ponieważ SQLite nie rozumie list.
-    // Zawartość kartonu będziemy wyciągać z bazy danych po BoxCode.
     [Ignore]
     public List<BoxItem> Items { get; set; } = new List<BoxItem>();
     
+    public string ItemsJson { get; set; } = string.Empty;
+
     public string SyncStatus { get; set; } = "Pending"; 
+
+    public void PrepareForSave()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        ItemsJson = JsonSerializer.Serialize(Items, options);
+    }
+
+    public void LoadAfterRead()
+    {
+        if (!string.IsNullOrEmpty(ItemsJson))
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            Items = JsonSerializer.Deserialize<List<BoxItem>>(ItemsJson, options) ?? new List<BoxItem>();
+        }
+        else
+        {
+            Items = new List<BoxItem>();
+        }
+    }
 }
 
 public class BoxItem : INotifyPropertyChanged
 {
     [PrimaryKey, AutoIncrement]
-    public int Id { get; set; } // Każdy element w kartonie potrzebuje swojego ID w bazie
+    public int Id { get; set; } 
 
-    [Indexed] // Indeks przyspieszy wyszukiwanie wszystkich przedmiotów z danego kartonu
-    public string BoxCode { get; set; } = string.Empty; // Klucz obcy łączący produkt z kartonem
+    [Indexed] 
+    public string BoxCode { get; set; } = string.Empty; 
 
-    // SQLite nie zapisze całego obiektu Product w jednej komórce. 
-    // Zapisujemy ID produktu oraz jego nazwę/indeks bezpośrednio w tej tabeli.
     public string ProductId { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
     public string ProductSku { get; set; } = string.Empty;
@@ -56,7 +81,6 @@ public class BoxItem : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
-
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

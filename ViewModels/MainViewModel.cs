@@ -1,7 +1,14 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Storage;
 using MagazynApp.Model;
 using MagazynApp.Services;
 
@@ -43,15 +50,12 @@ public class MainViewModel : INotifyPropertyChanged
     // Lista pozycji wyświetlana w CollectionView
     public ObservableCollection<BoxItem> CurrentItems { get; } = new();
 
-    // Komendy dla UI
+    // Komenda obsługująca skok z czytnika kodów
     public ICommand ProcessScanCommand { get; }
-    public ICommand ImportCsvCommand { get; }
 
     public MainViewModel()
     {
-        // Wiążemy metody asynchroniczne z komendami MAUI
         ProcessScanCommand = new Command(async () => await ExecuteProcessScanAsync());
-        ImportCsvCommand = new Command(async () => await ChooseAndImportCsvAsync());
     }
 
     private async Task ExecuteProcessScanAsync()
@@ -64,7 +68,6 @@ public class MainViewModel : INotifyPropertyChanged
         // Sytuacja A: Brak otwartego kartonu -> Wyszukaj lub stwórz karton
         if (CurrentBox == null)
         {
-            // Skan kodu kartonu – sprawdzamy w SQLite przez StorageService
             CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
             
             CurrentItems.Clear();
@@ -74,14 +77,14 @@ public class MainViewModel : INotifyPropertyChanged
             }
 
             if (CurrentItems.Count > 0)
-                StatusMessage = $"📦 Znaleziono i wczytano karton: {scannedCode} ({CurrentItems.Count} pozycji).";
+                StatusMessage = $" Znaleziono i wczytano karton: {scannedCode} ({CurrentItems.Count} pozycji).";
             else
-                StatusMessage = $"📦 Utworzono NOWY karton: {scannedCode}. Możesz skanować produkty.";
+                StatusMessage = $" Utworzono NOWY karton: {scannedCode}. Możesz skanować produkty.";
 
             return;
         }
 
-        // Sytuacja B: Karton jest otwarty -> Skanowanie produktu (weryfikacja z bazą CSV)
+        // Sytuacja B: Karton jest otwarty -> Skanowanie produktu (weryfikacja z bazą pobraną z CSV)
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         
         if (product != null)
@@ -111,7 +114,7 @@ public class MainViewModel : INotifyPropertyChanged
         }
         else
         {
-            StatusMessage = $"⚠️ Nieznany kod: '{scannedCode}'. Brak produktu w bazie danych!";
+            StatusMessage = $" Nieznany kod: '{scannedCode}'. Brak produktu w bazie danych!";
         }
     }
 
@@ -119,49 +122,56 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (CurrentBox == null) return;
 
-        // Przepisujemy aktualny stan listy do obiektu przed zapisem
+        // KROK KLUCZOWY: Przepisujemy stan z kolekcji widoku przed zapisem
         CurrentBox.Items = CurrentItems.ToList();
 
-        // Trwały zapis do SQLite (waga, wymiary, zjsonowane przedmioty)
+        // Trwały zapis do SQLite
         await _storageService.SaveBoxAsync(CurrentBox);
 
-        StatusMessage = $"💾 Karton {CurrentBox.BoxCode} zapisany pomyślnie w bazie lokalnej.";
-        
-        // Reset okna pod kolejny skan
+        StatusMessage = $"💾 Karton {CurrentBox.BoxCode} wraz z zawartością ({CurrentItems.Count} szt) zapisany trwale.";
+    
+        // Reset okna pod kolejny skan paczki
         CurrentBox = null;
         CurrentItems.Clear();
     }
 
-    private async Task ChooseAndImportCsvAsync()
+    // Automatyczna metoda sieciowa wywoływana przez timer z MainPage.xaml.cs
+    public async Task DownloadAndImportCsvAutomaticallyAsync()
     {
+        // 💡 Zmień na swój rzeczywisty adres URL w sieci firmy
+        string csvUrl = "http://twoja-firma.pl/magazyn/produkty.csv"; 
+
         try
         {
-            var options = new PickOptions
-            {
-                PickerTitle = "Wybierz plik z kartoteką produktów (CSV)",
-                FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
-                {
-                    { DevicePlatform.Android, new[] { "text/comma-separated-values", "text/csv" } },
-                    { DevicePlatform.MacCatalyst, new[] { "csv" } }
-                })
-            };
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(15); 
 
-            var result = await FilePicker.Default.PickAsync(options);
-            
-            if (result != null)
-            {
-                StatusMessage = "Trwa importowanie danych z pliku CSV...";
-                bool success = await _storageService.ImportFromCsvAsync(result.FullPath);
+            using var stream = await httpClient.GetStreamAsync(csvUrl);
 
-                if (success)
-                    StatusMessage = "✅ Produkty z systemu Graffiti zaimportowane pomyślnie!";
-                else
-                    StatusMessage = "❌ Błąd importu. Sprawdź strukturę pliku CSV.";
+            var tempPath = Path.Combine(FileSystem.CacheDirectory, "pobrane_produkty.csv");
+            using (var fs = File.Create(tempPath))
+            {
+                await stream.CopyToAsync(fs);
             }
+
+            bool success = await _storageService.ImportFromCsvAsync(tempPath);
+
+            if (success)
+            {
+                // Aktualizujemy status tylko, gdy pracownik nie kompletuje akurat paczki, 
+                // żeby nie mazać mu informacji o skanowanych produktach
+                if (!IsBoxOpen)
+                {
+                    StatusMessage = " Baza produktów zaktualizowana automatycznie w tle.";
+                }
+            }
+
+            if (File.Exists(tempPath)) File.Delete(tempPath);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"⚠️ Błąd systemowy wyboru pliku: {ex.Message}";
+            // Błędy sieci cicho logujemy w Riderze, aby nie przerywać pracy magazyniera
+            System.Diagnostics.Debug.WriteLine($"Błąd auto-aktualizacji: {ex.Message}");
         }
     }
 

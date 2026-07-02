@@ -1,63 +1,60 @@
-﻿using MagazynApp.ViewModels;
+﻿using System;
+using Microsoft.Maui.Controls;
+using MagazynApp.ViewModels;
 
 namespace MagazynApp;
 
 public partial class MainPage : ContentPage
 {
+    private IDispatcherTimer? _backgroundDownloadTimer;
+
     public MainPage()
     {
         InitializeComponent();
+        SetupBackgroundSync();
+    }
+
+    private void SetupBackgroundSync()
+    {
+        // Tworzymy timer powiązany z głównym wątkiem aplikacji
+        _backgroundDownloadTimer = Dispatcher.CreateTimer();
+        
+        // ⏰ CZAS: Jak często baza ma się aktualizować w tle (np. co 15 minut)
+        _backgroundDownloadTimer.Interval = TimeSpan.FromMinutes(15);
+        
+        // Co ma się stać, gdy licznik odliczy czas:
+        _backgroundDownloadTimer.Tick += async (s, e) =>
+        {
+            if (BindingContext is MainViewModel vm)
+            {
+                // Wywołujemy pobieranie w tle
+                await vm.DownloadAndImportCsvAutomaticallyAsync();
+            }
+        };
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
         
-        // Zawsze wymuszaj fokus na skanerze po załadowaniu ekranu
+        // Ustawienie fokusu na skaner
         ScanEntry.Focus();
 
-        // AUTOMATYCZNY IMPORT:
-        // Sprawdzamy, czy baza danych została już napełniona. Jeśli nie,
-        // wyciągamy wbudowany plik produkty.csv i ładujemy go automatycznie.
-        try
+        // 1. Wywołujemy pobranie od razu przy włączeniu aplikacji
+        if (BindingContext is MainViewModel vm)
         {
-            var hasKey = Preferences.Default.Get("FirstTimeCsvImported", false);
-            if (!hasKey)
-            {
-                // MAUI potrafi czytać pliki oznaczone jako 'MauiAsset' niezależnie od platformy
-                using var stream = await FileSystem.OpenAppPackageFileAsync("produkty.csv");
-                
-                // Tworzymy tymczasową ścieżkę zapisu, żeby StorageService mógł go sparsować
-                var tempPath = Path.Combine(FileSystem.CacheDirectory, "temp_produkty.csv");
-                
-                using (var fs = File.Create(tempPath))
-                {
-                    await stream.CopyToAsync(fs);
-                }
+            await vm.DownloadAndImportCsvAutomaticallyAsync();
+        }
 
-                if (BindingContext is MainViewModel vm)
-                {
-                    vm.StatusMessage = "Inicjalizacja bazy towarowej z pliku CSV...";
-                    // Korzystamy z metody w Twoim serwisie (musisz zmienić widoczność metody 
-                    // importującej w StorageService z private/internal na public lub wywołać ją przez VM)
-                    // Zakładając użycie komendy lub metody pomocniczej:
-                    
-                    // Dla uproszczenia – jeśli wkleiłeś komendę ImportCsv do VM, możemy wywołać bezpośrednio logikę serwisu:
-                    var storageService = new Services.StorageService();
-                    bool success = await storageService.ImportFromCsvAsync(tempPath);
-                    
-                    if (success)
-                    {
-                        Preferences.Default.Set("FirstTimeCsvImported", true);
-                        vm.StatusMessage = "✅ Baza produktów Graffiti zainicjalizowana automatycznie!";
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Błąd auto-importu CSV: {ex.Message}");
-        }
+        // 2. Startujemy timer tła, żeby zaczął odliczać kolejne 15 minut
+        _backgroundDownloadTimer?.Start();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        // Zatrzymujemy zegar, jeśli użytkownik zamknie to okno aplikacji
+        _backgroundDownloadTimer?.Stop();
     }
 
     private async void OnSaveAndCloseClicked(object sender, EventArgs e)

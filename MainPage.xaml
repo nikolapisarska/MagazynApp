@@ -5,7 +5,6 @@
              x:Class="MagazynApp.MainPage"
              Title="Panel Magazynowy">
 
-    <!-- Naprawa błędu BindingContext -->
     <ContentPage.BindingContext>
         <vm:MainViewModel />
     </ContentPage.BindingContext>
@@ -13,7 +12,7 @@
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="20" MaximumWidthRequest="550" HorizontalOptions="Center">
             
-            <!-- Naprawa błędu RoundRectangleCorners (używamy StrokeShape) -->
+            <!-- Czysty nagłówek bez zbędnych guzików -->
             <Border StrokeThickness="2" Stroke="{StaticResource Primary}" Padding="15" StrokeShape="RoundRectangle 10">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Pole Skanera (Zeskanuj Karton lub Produkt):" FontAttributes="Bold" FontSize="14" />
@@ -37,7 +36,7 @@
 
             <VerticalStackLayout Spacing="15" IsVisible="{Binding IsBoxOpen}">
                 
-                <Label Text="{Binding CurrentBox.BoxCode, StringFormat='📦 Kod kartonu: {0}'}" 
+                <Label Text="{Binding CurrentBox.BoxCode, StringFormat=' Kod kartonu: {0}'}" 
                        FontSize="22" 
                        FontAttributes="Bold" 
                        TextColor="DarkSlateGray"/>
