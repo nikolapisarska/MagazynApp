@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MagazynApp.ViewModels"
              x:Class="MagazynApp.MainPage"
              Shell.NavBarIsVisible="False"
              BackgroundColor="#F5F5F5">
@@ -22,7 +23,7 @@
             <VerticalStackLayout Spacing="8">
                 <Grid ColumnDefinitions="*, Auto">
                     <Label Text="Status: Aktywny" TextColor="#2E7D32" FontAttributes="Bold" FontSize="14"/>
-                    <Label Grid.Column="1" Text="Operator: User" TextColor="#757575" FontSize="12"/>
+                    <Label Grid.Column="1" Text="Operator:" TextColor="#757575" FontSize="12"/>
                 </Grid>
 
                 <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#424242"/>
@@ -90,17 +91,33 @@
                     <CollectionView ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton. Zeskanuj produkty." HeightRequest="200">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="*, Auto" Padding="15,10" MinimumHeightRequest="60">
+                                <Grid ColumnDefinitions="*, Auto, Auto" Padding="15,10" MinimumHeightRequest="60">
+                                    <!-- Nazwa i Indeks -->
                                     <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
                                         <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="16" TextColor="#212121"/>
                                         <Label Text="{Binding ProductSku, StringFormat='Indeks: {0}'}" FontSize="12" TextColor="#757575"/>
                                     </VerticalStackLayout>
-                                    <HorizontalStackLayout Grid.Column="1" Spacing="10" VerticalOptions="Center">
-                                        <Button Text="-" Command="{Binding DecrementQuantityCommand}" WidthRequest="45" HeightRequest="45" CornerRadius="22" BackgroundColor="#E0E0E0" TextColor="Black" FontSize="20"/>
-                                        <Label Text="{Binding Quantity, Mode=TwoWay}" FontSize="22" FontAttributes="Bold" VerticalTextAlignment="Center" HorizontalTextAlignment="Center" WidthRequest="40" TextColor="#212121"/>
-                                        <Button Text="+" Command="{Binding IncrementQuantityCommand}" WidthRequest="45" HeightRequest="45" CornerRadius="22" BackgroundColor="#E0E0E0" TextColor="Black" FontSize="20"/>
-                                    </HorizontalStackLayout>
-                                    <BoxView Grid.ColumnSpan="2" HeightRequest="1" Color="#EEEEEE" VerticalOptions="End" Margin="15,0"/>
+
+                                    <!-- Pole ilości (edycja ręczna) -->
+                                    <Entry Grid.Column="1" 
+                                           Text="{Binding Quantity, Mode=TwoWay}" 
+                                           Keyboard="Numeric" 
+                                           WidthRequest="60" 
+                                           HorizontalTextAlignment="Center"
+                                           VerticalOptions="Center"/>
+
+                                    <!-- Przycisk usuwania -->
+                                    <Button Grid.Column="2" 
+                                            Text="X" 
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=RemoveItemCommand}"
+                                            CommandParameter="{Binding .}"
+                                            TextColor="Red"
+                                            FontAttributes="Bold"
+                                            BackgroundColor="Transparent"
+                                            BorderColor="Transparent"
+                                            WidthRequest="40"
+                                            HeightRequest="40"
+                                            VerticalOptions="Center"/>
                                 </Grid>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>

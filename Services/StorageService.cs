@@ -20,7 +20,6 @@ public class StorageService
         {
             Stream stream;
 
-            // SYTUACJA A: Jeśli podano ścieżkę (pobieranie automatyczne z sieci)
             if (!string.IsNullOrWhiteSpace(filePath))
             {
                 if (!File.Exists(filePath))
@@ -28,7 +27,6 @@ public class StorageService
 
                 stream = File.OpenRead(filePath);
             }
-            // SYTUACJA B: Brak ścieżki (start aplikacji i czytanie wbudowanego pliku z Resources/Raw/)
             else
             {
                 stream = await FileSystem.OpenAppPackageFileAsync("produkty.csv");
@@ -38,13 +36,14 @@ public class StorageService
             {
                 using var reader = new StreamReader(stream);
                 
-                // Pominięcie linii nagłówkowej (CodeOrIdGraffiti;Name)
-                if (!reader.EndOfStream) 
-                    await reader.ReadLineAsync();
+                // Pominięcie linii nagłówkowej
+                await reader.ReadLineAsync();
 
-                while (!reader.EndOfStream)
+                string? line;
+                // Poprawka: sprawdzamy bezpośrednio wynik ReadLineAsync, 
+                // co eliminuje ostrzeżenie CA2024 i naprawia błąd logiczny
+                while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    var line = await reader.ReadLineAsync();
                     if (string.IsNullOrWhiteSpace(line)) 
                         continue;
 
@@ -68,11 +67,7 @@ public class StorageService
 
             return false;
         }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (Exception)
+        catch (Exception) // Uproszczone dla czytelności
         {
             return false;
         }

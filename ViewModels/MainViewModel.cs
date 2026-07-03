@@ -53,6 +53,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand ResetCommand { get; }
     public ICommand IncrementQuantityCommand { get; }
     public ICommand DecrementQuantityCommand { get; }
+    public ICommand RemoveItemCommand { get; }
 
     public MainViewModel()
     {
@@ -63,7 +64,19 @@ public class MainViewModel : INotifyPropertyChanged
         IncrementQuantityCommand = new Command<BoxItem>(item => UpdateQuantity(item, 1));
         DecrementQuantityCommand = new Command<BoxItem>(item => UpdateQuantity(item, -1));
         
+        // POPRAWKA: Przenieś to tutaj do konstruktora
+        RemoveItemCommand = new Command<BoxItem>(RemoveItem);
+        
         Task.Run(async () => await _storageService.ImportFromCsvAsync());
+    }
+
+    private void RemoveItem(BoxItem item)
+    {
+        if (item != null && CurrentItems.Contains(item))
+        {
+            CurrentItems.Remove(item);
+            StatusMessage = $"Usunięto: {item.ProductName}";
+        }
     }
 
     private void ResetUI()

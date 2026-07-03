@@ -36,24 +36,22 @@ public partial class MainPage : ContentPage
     }
 
     // Ta metoda wykonuje się automatycznie, gdy użytkownik/skaner kliknie Enter
-    private void OnScanEntryCompleted(object sender, EventArgs e)
+    // Dodaj znak zapytania 'object?' przy parametrze sender
+    private void OnScanEntryCompleted(object? sender, EventArgs e)
     {
-        // Wykorzystujemy krótki moment opóźnienia (80 ms), 
-        // aby system operacyjny zdążył przetworzyć pojawienie się sekcji wymiarów,
-        // a następnie brutalnie kradniemy fokus z powrotem do skanera.
         Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(80), () =>
         {
             ScanEntry.Focus();
         });
     }
 
-    private async void OnSaveAndCloseClicked(object sender, EventArgs e)
+    // Dodaj znak zapytania 'object?' przy parametrze sender
+    private async void OnSaveAndCloseClicked(object? sender, EventArgs e)
     {
         if (BindingContext is MainViewModel vm)
         {
             await vm.SaveAndCloseBoxAsync();
             
-            // Po zapisaniu i zamknięciu kartonu, przywracamy fokus na skaner
             ScanEntry.Focus();
         }
     }

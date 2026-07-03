@@ -70,6 +70,7 @@ public class BoxItem : INotifyPropertyChanged
         get => _quantity;
         set
         {
+            // Jeśli ktoś wpisze 0 lub pustą wartość, ustawiamy 1
             int validatedValue = (value == null || value < 1) ? 1 : value.Value;
         
             if (_quantity != validatedValue)
