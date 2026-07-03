@@ -12,11 +12,33 @@ public class Box
     [PrimaryKey] 
     public string BoxCode { get; set; } = string.Empty;
     
-    public float Height { get; set; }
-    public float Width { get; set; }
-    public float Length { get; set; }
-    public float Weight { get; set; }
+    private float _height;
+    public float Height
+    {
+        get => _height;
+        set => _height = Math.Abs(value);
+    }
 
+    private float _width;
+    public float Width
+    {
+        get => _width;
+        set => _width = Math.Abs(value);
+    }
+
+    private float _length;
+    public float Length
+    {
+        get => _length;
+        set => _length = Math.Abs(value);
+    }
+
+    private float _weight;
+    public float Weight
+    {
+        get => _weight;
+        set => _weight = Math.Abs(value);
+    }
     [Ignore]
     public List<BoxItem> Items { get; set; } = new List<BoxItem>();
     
@@ -70,9 +92,9 @@ public class BoxItem : INotifyPropertyChanged
         get => _quantity;
         set
         {
-            // Jeśli ktoś wpisze 0 lub pustą wartość, ustawiamy 1
-            int validatedValue = (value == null || value < 1) ? 1 : value.Value;
-        
+            // Używamy Math.Abs, aby dodatkowo zabezpieczyć się przed ujemnymi
+            int validatedValue = (value == null || value < 1) ? 1 : Math.Abs(value.Value);
+    
             if (_quantity != validatedValue)
             {
                 _quantity = validatedValue;
