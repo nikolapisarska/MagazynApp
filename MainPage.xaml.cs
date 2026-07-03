@@ -55,4 +55,18 @@ public partial class MainPage : ContentPage
             ScanEntry.Focus();
         }
     }
+    private async void OnBarcodeDetected(string barcode)
+    {
+        if (BindingContext is MainViewModel vm)
+        {
+            // 1. Ustawiamy wartość w ViewModelu
+            vm.ScanInput = barcode;
+        
+            // 2. Wywołujemy metodę bezpośrednio
+            await vm.ExecuteProcessScanAsync();
+        
+            // 3. Opcjonalnie: ustawiamy fokus na pole skanera po zakończeniu
+            ScanEntry.Focus();
+        }
+    }
 }

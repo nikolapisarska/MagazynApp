@@ -64,7 +64,7 @@ public class MainViewModel : INotifyPropertyChanged
         IncrementQuantityCommand = new Command<BoxItem>(item => UpdateQuantity(item, 1));
         DecrementQuantityCommand = new Command<BoxItem>(item => UpdateQuantity(item, -1));
         
-        // POPRAWKA: Przenieś to tutaj do konstruktora
+       
         RemoveItemCommand = new Command<BoxItem>(RemoveItem);
         
         Task.Run(async () => await _storageService.ImportFromCsvAsync());
@@ -95,56 +95,90 @@ public class MainViewModel : INotifyPropertyChanged
         StatusMessage = $"Zmieniono ilość: {item.ProductName} na {item.Quantity}";
     }
 
-    private async Task ExecuteProcessScanAsync()
+  public async Task ExecuteProcessScanAsync()
     {
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
 
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty; 
 
-        if (CurrentBox == null)
-        {
-            CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
-            CurrentItems.Clear();
-            foreach (var item in CurrentBox.Items)
-            {
-                CurrentItems.Add(item);
-            }
-
-            if (CurrentItems.Count > 0)
-                StatusMessage = $"Znaleziono karton: {scannedCode} ({CurrentItems.Count} pozycji).";
-            else
-                StatusMessage = $"Utworzono NOWY karton: {scannedCode}.";
-            return;
-        }
-
+        // 1. Sprawdź, czy to PRODUKT
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
-            var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
-            if (existingItem != null)
+            if (CurrentBox != null)
             {
-                existingItem.Quantity += 1;
-                StatusMessage = $"Zwiększono ilość: {product.Name}";
+                // ... (Twoja logika dodawania produktu pozostaje bez zmian) ...
+                var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
+                if (existingItem != null)
+                {
+                    existingItem.Quantity += 1;
+                    StatusMessage = $"Zwiększono ilość: {product.Name}";
+                }
+                else
+                {
+                    var newItem = new BoxItem
+                    {
+                        BoxCode = CurrentBox.BoxCode,
+                        ProductId = product.CodeOrIdGraffiti,
+                        ProductSku = product.CodeOrIdGraffiti,
+                        ProductName = product.Name,
+                        Quantity = 1
+                    };
+                    CurrentBox.Items.Add(newItem); 
+                    CurrentItems.Add(newItem); 
+                    StatusMessage = $"Dodano: {product.Name}";
+                }
+                CurrentBox.PrepareForSave();
+                await _storageService.SaveBoxAsync(CurrentBox);
+                return; 
             }
             else
             {
-                var newItem = new BoxItem
-                {
-                    BoxCode = CurrentBox.BoxCode,
-                    ProductId = product.CodeOrIdGraffiti,
-                    ProductSku = product.CodeOrIdGraffiti,
-                    ProductName = product.Name,
-                    Quantity = 1
-                };
-                CurrentBox.Items.Add(newItem);
-                CurrentItems.Add(newItem);
-                StatusMessage = $"Dodano: {product.Name}";
+                StatusMessage = "Najpierw zeskanuj kod istniejącego kartonu!";
+                return;
             }
         }
-        else
+
+        // 2. Jeśli kod NIE jest produktem, sprawdź czy to KARTON
+        var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
+    
+        if (existingBox != null)
         {
-            StatusMessage = $"Błąd: Nieznany kod '{scannedCode}'!";
+            // A) Zapisz obecny karton i poinformuj o tym
+            if (CurrentBox != null)
+            {
+                CurrentBox.Items = CurrentItems.ToList();
+                CurrentBox.PrepareForSave();
+                await _storageService.SaveBoxAsync(CurrentBox);
+                string oldBoxCode = CurrentBox.BoxCode;
+                
+                CurrentBox = existingBox;
+                CurrentBox.LoadAfterRead();
+                CurrentItems.Clear();
+                foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
+                
+                StatusMessage = $"Zapisano {oldBoxCode} i otwarto karton: {scannedCode}.";
+            }
+            else
+            {
+                CurrentBox = existingBox;
+                CurrentBox.LoadAfterRead();
+                CurrentItems.Clear();
+                foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
+                StatusMessage = $"Otwarto karton: {scannedCode}.";
+            }
+        }
+        else if (CurrentBox == null) 
+        {
+            // C) Tworzenie nowego kartonu
+            CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
+            StatusMessage = $"Utworzono nowy karton: {scannedCode}.";
+        }
+        else 
+        {
+            // D) Błąd ogólny
+            StatusMessage = $"Błąd: Nie rozpoznano kodu '{scannedCode}' (nie jest ani produktem, ani kartonem).";
         }
     }
 
@@ -154,7 +188,7 @@ public class MainViewModel : INotifyPropertyChanged
 
         CurrentBox.Items = CurrentItems.ToList();
         await _storageService.SaveBoxAsync(CurrentBox);
-        StatusMessage = $"💾 Karton {CurrentBox.BoxCode} zapisany.";
+        StatusMessage = $" Karton {CurrentBox.BoxCode} zapisany.";
         ResetUI();
     }
 
@@ -178,4 +212,5 @@ public class MainViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    
 }

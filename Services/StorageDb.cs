@@ -63,4 +63,5 @@ public class StorageDb
         box.PrepareForSave();
         await _database!.InsertOrReplaceAsync(box);
     }
+    
 }

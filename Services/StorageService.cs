@@ -93,4 +93,9 @@ public class StorageService
     {
         await _db.SaveBoxAsync(box);
     }
+    public async Task<Box?> GetBoxByCodeAsync(string boxCode)
+    {
+        // Wywołujemy bezpośrednio bazę danych (tę samą, której używa metoda GetOrCreate)
+        return await _db.GetBoxByCodeAsync(boxCode);
+    }
 }
