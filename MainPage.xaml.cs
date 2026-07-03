@@ -18,7 +18,8 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         
-        // Ustawienie fokusu na pole skanera, aby magazynier mógł od razu działać
+        // Ustawienie fokusu nax
+        //pole skanera, aby magazynier mógł od razu działać
         ScanEntry.Focus();
 
         // Jednorazowe, automatyczne załadowanie wbudowanego pliku CSV przy starcie aplikacji

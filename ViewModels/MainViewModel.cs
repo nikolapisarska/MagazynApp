@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Storage;
 using MagazynApp.Model;
 using MagazynApp.Services;
 
@@ -47,18 +45,41 @@ public class MainViewModel : INotifyPropertyChanged
 
     public bool IsBoxOpen => CurrentBox != null;
 
-    // Lista pozycji wyświetlana w CollectionView
     public ObservableCollection<BoxItem> CurrentItems { get; } = new();
 
-    // Komenda obsługująca skok z czytnika kodów
+    // Komendy
     public ICommand ProcessScanCommand { get; }
+    public ICommand SaveAndCloseCommand { get; }
+    public ICommand ResetCommand { get; }
+    public ICommand IncrementQuantityCommand { get; }
+    public ICommand DecrementQuantityCommand { get; }
 
     public MainViewModel()
     {
         ProcessScanCommand = new Command(async () => await ExecuteProcessScanAsync());
-    
-        // WYMUSZENIE INTERFEJSU: Załaduj wbudowany plik CSV przy starcie aplikacji
+        SaveAndCloseCommand = new Command(async () => await SaveAndCloseBoxAsync());
+        ResetCommand = new Command(() => ResetUI());
+        
+        IncrementQuantityCommand = new Command<BoxItem>(item => UpdateQuantity(item, 1));
+        DecrementQuantityCommand = new Command<BoxItem>(item => UpdateQuantity(item, -1));
+        
         Task.Run(async () => await _storageService.ImportFromCsvAsync());
+    }
+
+    private void ResetUI()
+    {
+        CurrentBox = null;
+        CurrentItems.Clear();
+        StatusMessage = "Zresetowano. Zeskanuj nowy kod kartonu.";
+    }
+
+    private void UpdateQuantity(BoxItem item, int delta)
+    {
+        if (item == null) return;
+        int newQuantity = (item.Quantity ?? 0) + delta;
+        if (newQuantity < 1) newQuantity = 1;
+        item.Quantity = newQuantity;
+        StatusMessage = $"Zmieniono ilość: {item.ProductName} na {item.Quantity}";
     }
 
     private async Task ExecuteProcessScanAsync()
@@ -66,13 +87,11 @@ public class MainViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
 
         string scannedCode = ScanInput.Trim();
-        ScanInput = string.Empty; // Natychmiastowe czyszczenie pod kolejny skan
+        ScanInput = string.Empty; 
 
-        // Sytuacja A: Brak otwartego kartonu -> Wyszukaj lub stwórz karton
         if (CurrentBox == null)
         {
             CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
-            
             CurrentItems.Clear();
             foreach (var item in CurrentBox.Items)
             {
@@ -80,24 +99,20 @@ public class MainViewModel : INotifyPropertyChanged
             }
 
             if (CurrentItems.Count > 0)
-                StatusMessage = $" Znaleziono i wczytano karton: {scannedCode} ({CurrentItems.Count} pozycji).";
+                StatusMessage = $"Znaleziono karton: {scannedCode} ({CurrentItems.Count} pozycji).";
             else
-                StatusMessage = $" Utworzono NOWY karton: {scannedCode}. Możesz skanować produkty.";
-
+                StatusMessage = $"Utworzono NOWY karton: {scannedCode}.";
             return;
         }
 
-        // Sytuacja B: Karton jest otwarty -> Skanowanie produktu (weryfikacja z bazą pobraną z CSV)
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
-        
         if (product != null)
         {
             var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
-
             if (existingItem != null)
             {
                 existingItem.Quantity += 1;
-                StatusMessage = $"Zwiększono ilość: {product.Name} (Suma: {existingItem.Quantity})";
+                StatusMessage = $"Zwiększono ilość: {product.Name}";
             }
             else
             {
@@ -109,7 +124,6 @@ public class MainViewModel : INotifyPropertyChanged
                     ProductName = product.Name,
                     Quantity = 1
                 };
-
                 CurrentBox.Items.Add(newItem);
                 CurrentItems.Add(newItem);
                 StatusMessage = $"Dodano: {product.Name}";
@@ -117,7 +131,7 @@ public class MainViewModel : INotifyPropertyChanged
         }
         else
         {
-            StatusMessage = $" Nieznany kod: '{scannedCode}'. Brak produktu w bazie danych!";
+            StatusMessage = $"Błąd: Nieznany kod '{scannedCode}'!";
         }
     }
 
@@ -125,44 +139,30 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (CurrentBox == null) return;
 
-        // KROK KLUCZOWY: Przepisujemy stan z kolekcji widoku przed zapisem
         CurrentBox.Items = CurrentItems.ToList();
-
-        // Trwały zapis do SQLite
         await _storageService.SaveBoxAsync(CurrentBox);
-
-        StatusMessage = $"💾 Karton {CurrentBox.BoxCode} wraz z zawartością ({CurrentItems.Count} szt) zapisany trwale.";
-    
-        // Reset okna pod kolejny skan paczki
-        CurrentBox = null;
-        CurrentItems.Clear();
+        StatusMessage = $"💾 Karton {CurrentBox.BoxCode} zapisany.";
+        ResetUI();
     }
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    // Wywoływane automatycznie przez MainPage przy starcie aplikacji
+
     public async Task InitializeLocalDatabaseAsync()
     {
         try
         {
-            // Sprawdzamy, czy produkt "meow" (lub jakikolwiek inny) już istnieje, 
-            // żeby nie katować bazy importem przy każdym wejściu na ekran
             var testProduct = await _storageService.GetProductByCodeAsync("meow");
-        
             if (testProduct == null)
             {
-                if (!IsBoxOpen) StatusMessage = " Inicjalizacja bazy danych produktów...";
-            
-                // Ładujemy plik produkty.csv prosto z folderu Resources/Raw/
                 bool success = await _storageService.ImportFromCsvAsync(); 
-            
-                if (success && !IsBoxOpen)
-                    StatusMessage = " Wbudowana baza produktów załadowana pomyślnie.";
+                if (success) StatusMessage = "Baza produktów załadowana.";
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Błąd inicjalizacji bazy: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Błąd inicjalizacji: {ex.Message}");
         }
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
