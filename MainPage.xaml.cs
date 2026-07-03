@@ -1,6 +1,5 @@
-﻿using System;
-using MagazynApp.ViewModels;
-using Microsoft.Maui.Controls;
+﻿using MagazynApp.ViewModels;
+
 
 namespace MagazynApp;
 
@@ -9,8 +8,7 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
-        // Sprawdź, czy w pliku XAML nie masz przypisanego <vm:MainViewModel /> w BindingContext,
-        // jeśli masz, tę linię poniżej można zakomentować, żeby nie tworzyć ViewModelu dwa razy.
+        
         BindingContext = new MainViewModel();
     }
 
@@ -30,10 +28,7 @@ public partial class MainPage : ContentPage
         }
     }
 
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-    }
+
 
     // Ta metoda wykonuje się automatycznie, gdy użytkownik/skaner kliknie Enter
     // Dodaj znak zapytania 'object?' przy parametrze sender
@@ -65,7 +60,7 @@ public partial class MainPage : ContentPage
             // 2. Wywołujemy metodę bezpośrednio
             await vm.ExecuteProcessScanAsync();
         
-            // 3. Opcjonalnie: ustawiamy fokus na pole skanera po zakończeniu
+            // 3. ustawiamy fokus na pole skanera po zakończeniu
             ScanEntry.Focus();
         }
     }

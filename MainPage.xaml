@@ -43,7 +43,7 @@
                        FontSize="14" 
                        FontAttributes="Bold" 
                        HorizontalOptions="Center"
-                       TextColor="#D32F2F" 
+                       TextColor="#71B17B" 
                        Margin="0,5,0,0"/>
             </VerticalStackLayout>
         </Border>
