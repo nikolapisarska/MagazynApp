@@ -13,18 +13,29 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        ScanEntry.Focus();
-
+        
         if (BindingContext is MainViewModel vm)
         {
-            // Metoda jest wywoływana z ViewModelu, a nie definiowana tutaj
             await vm.InitializeLocalDatabaseAsync();
         }
+
+        // Ustawienie fokusa na wejściu
+        ScanEntry.Focus();
     }
 
-    private void OnScanEntryCompleted(object? sender, EventArgs e)
+    // Używamy tylko tej metody. Upewnij się, że w XAML masz: Completed="OnScanEntryCompleted"
+    private void OnScanEntryCompleted(object sender, EventArgs e)
     {
-        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(80), () =>
+        if (BindingContext is MainViewModel vm)
+        {
+            if (vm.ProcessScanCommand.CanExecute(null))
+            {
+                vm.ProcessScanCommand.Execute(null);
+            }
+        }
+    
+        // Przywrócenie fokusa
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () => 
         {
             ScanEntry.Focus();
         });

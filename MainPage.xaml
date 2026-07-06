@@ -28,12 +28,11 @@
 
                 <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#424242"/>
                 
-                <Entry x:Name="ScanEntry"
-                       Text="{Binding ScanInput}"
-                       ReturnCommand="{Binding ProcessScanCommand}"
+                <Entry x:Name="ScanEntry" 
+                       Text="{Binding ScanInput}" 
                        Completed="OnScanEntryCompleted"
-                       Placeholder="Kliknij lub zeskanuj..."
-                       ClearButtonVisibility="WhileEditing"/>
+                       ReturnType="Send"
+                       HorizontalOptions="FillAndExpand" />
                 <Label Text="{Binding StatusMessage}" 
                        FontSize="14" 
                        FontAttributes="Bold" 
