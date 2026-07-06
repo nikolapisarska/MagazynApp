@@ -23,7 +23,6 @@
             <VerticalStackLayout Spacing="8">
                 <Grid ColumnDefinitions="*, Auto">
                     <Label Text="Status: Aktywny" TextColor="#2E7D32" FontAttributes="Bold" FontSize="14"/>
-                    <Label Grid.Column="1" Text="Operator:" TextColor="#757575" FontSize="12"/>
                 </Grid>
 
                 <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#424242"/>

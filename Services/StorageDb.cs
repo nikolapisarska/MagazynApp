@@ -12,14 +12,14 @@ public class StorageDb
     // Metoda inicjalizująca bazę danych (tworzy plik i tabele, jeśli nie istnieją)
     private async Task InitAsync()
     {
-        // Sprawdź, czy połączenie już istnieje, aby nie otwierać go wielokrotnie
         if (_database != null) return;
 
-        // Ustal ścieżkę do pliku bazy danych w folderze aplikacji
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, "magazyn.db3");
-        _database = new SQLiteAsyncConnection(dbPath);
+    
+        // DODAJ TĘ LINIĘ:
+        System.Diagnostics.Debug.WriteLine($"!!! BAZA DANYCH JEST TUTAJ: {dbPath} !!!");
 
-        // Utwórz tabele dla produktów i kartonów (jeśli jeszcze nie istnieją)
+        _database = new SQLiteAsyncConnection(dbPath);
         await _database.CreateTableAsync<Product>();
         await _database.CreateTableAsync<Box>();
     }
@@ -28,7 +28,7 @@ public class StorageDb
     public async Task ImportProductsAsync(List<Product> products)
     {
         await InitAsync();
-        // Uruchomienie operacji w transakcji - jeśli coś pójdzie nie tak, zmiany zostaną wycofane
+        // Uruchomienie operacji w transakcjijeśli coś pójdzie nie tak, zmiany zostaną wycofane
         await _database!.RunInTransactionAsync(tran =>
         {
             foreach (var prod in products)

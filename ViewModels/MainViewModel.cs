@@ -83,7 +83,7 @@ public class MainViewModel : INotifyPropertyChanged
     {
         CurrentBox = null;
         CurrentItems.Clear();
-        StatusMessage = "Zresetowano. Zeskanuj nowy kod kartonu.";
+        StatusMessage = "Zapiano. Zeskanuj nowy kod kartonu.";
     }
 
     public async Task ExecuteProcessScanAsync()
@@ -121,7 +121,7 @@ public class MainViewModel : INotifyPropertyChanged
                 await _storageService.SaveBoxAsync(CurrentBox);
                 return; 
             }
-            StatusMessage = "Najpierw zeskanuj kod istniejącego kartonu!";
+            StatusMessage = "Najpierw zeskanuj kod kartonu!";
             return;
         }
 
