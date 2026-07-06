@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MagazynApp.Services;
+using MagazynApp.ViewModels;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
 
@@ -8,7 +10,7 @@ public static class MauiProgram
 {
 	public static MauiApp CreateMauiApp()
 	{
-		var builder = MauiApp.CreateBuilder();
+		var builder = MauiApp.CreateBuilder(); // Najpierw inicjalizujemy builder
 		builder
 			.UseMauiApp<App>()
 			.ConfigureFonts(fonts =>
@@ -16,6 +18,10 @@ public static class MauiProgram
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 			});
+
+		// Teraz możemy bezpiecznie zarejestrować serwisy i ViewModel
+		builder.Services.AddSingleton<IStorageService, StorageService>();
+		builder.Services.AddTransient<MainViewModel>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

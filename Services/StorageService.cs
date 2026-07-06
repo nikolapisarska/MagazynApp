@@ -3,7 +3,7 @@ using MagazynApp.Model;
 namespace MagazynApp.Services;
 
 // Klasa pośrednicząca (Serwis), zarządzająca operacjami na danych
-public class StorageService
+public class StorageService : IStorageService
 {
     // Inicjalizacja instancji klasy obsługującej bazę danych SQLite
     private readonly StorageDb _db = new();
