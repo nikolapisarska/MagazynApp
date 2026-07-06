@@ -9,4 +9,5 @@ public interface IStorageService
     Task<Box?> GetBoxByCodeAsync(string boxCode);
     Task<Box> GetOrCreateBoxAsync(string boxCode);
     Task SaveBoxAsync(Box box);
+    Task ExportBoxToCsvAsync(Box box);
 }

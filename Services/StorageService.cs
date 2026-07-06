@@ -1,3 +1,4 @@
+using System.Text;
 using MagazynApp.Model;
 
 namespace MagazynApp.Services;
@@ -35,7 +36,7 @@ public class StorageService : IStorageService
             using (stream)
             {
                 using var reader = new StreamReader(stream);
-                
+
                 // Pominięcie pierwszej linii (nagłówek CSV z nazwami kolumn)
                 await reader.ReadLineAsync();
 
@@ -44,7 +45,7 @@ public class StorageService : IStorageService
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
                     // Pomiń puste linie
-                    if (string.IsNullOrWhiteSpace(line)) 
+                    if (string.IsNullOrWhiteSpace(line))
                         continue;
 
                     // Podział linii na części za pomocą średnika (separator w CSV)
@@ -105,5 +106,31 @@ public class StorageService : IStorageService
     public async Task<Box?> GetBoxByCodeAsync(string boxCode)
     {
         return await _db.GetBoxByCodeAsync(boxCode);
+    }
+
+    public async Task ExportBoxToCsvAsync(Box box)
+    {
+        // Nazwa pliku musi być stała, aby działało dopisywanie (Append)
+        string fileName = "Historia_Kartonow.csv"; 
+        string folderPath = FileSystem.AppDataDirectory; 
+        string fullPath = Path.Combine(folderPath, fileName);
+
+        var sb = new StringBuilder();
+        bool fileExists = File.Exists(fullPath);
+
+        if (!fileExists)
+        {
+            sb.AppendLine("BoxCode;ProductSku;ProductName;Quantity;Weight;Dimensions");
+        }
+
+        foreach (var item in box.Items)
+        {
+            sb.AppendLine($"{box.BoxCode};{item.ProductSku};{item.ProductName};{item.Quantity};{box.Weight};{box.Length}x{box.Width}x{box.Height}");
+        }
+
+        // Używamy dopisywania
+        await File.AppendAllTextAsync(fullPath, sb.ToString());
+    
+        System.Diagnostics.Debug.WriteLine($"DEBUG_LOG: Zapisano do: {fullPath}");
     }
 }
