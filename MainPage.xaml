@@ -28,11 +28,6 @@
 
                 <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#424242"/>
                 
-                <Grid HeightRequest="100" BackgroundColor="#EEEEEE">
-                    <BoxView Color="#E0E0E0" WidthRequest="150" HeightRequest="60" HorizontalOptions="Center" VerticalOptions="Center"/>
-                    <Label Text="[Wizjer Skanera]" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#9E9E9E"/>
-                </Grid>
-
                 <Entry x:Name="ScanEntry"
                        Text="{Binding ScanInput}"
                        ReturnCommand="{Binding ProcessScanCommand}"
