@@ -19,12 +19,12 @@ public partial class MainPage : ContentPage
             await vm.InitializeLocalDatabaseAsync();
         }
 
-        // Ustawienie fokusa na wejściu
-        ScanEntry.Focus();
+        // Zmieniono z ScanEntry na ScanSearchBar
+        ScanSearchBar.Focus();
     }
 
-    // Używamy tylko tej metody. Upewnij się, że w XAML masz: Completed="OnScanEntryCompleted"
-    private void OnScanEntryCompleted(object sender, EventArgs e)
+    // Obsługa dla SearchBar (zdarzenie SearchButtonPressed wyzwalane przez Enter)
+    private void OnScanSearchBarPressed(object sender, EventArgs e)
     {
         if (BindingContext is MainViewModel vm)
         {
@@ -32,13 +32,13 @@ public partial class MainPage : ContentPage
             {
                 vm.ProcessScanCommand.Execute(null);
             }
+        
+            // Czyścimy SearchBar
+            ScanSearchBar.Text = string.Empty; 
+        
+            // Wymuszamy fokus
+            ScanSearchBar.Focus();
         }
-    
-        // Przywrócenie fokusa
-        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () => 
-        {
-            ScanEntry.Focus();
-        });
     }
 
     private async void OnSaveAndCloseClicked(object? sender, EventArgs e)
@@ -46,7 +46,7 @@ public partial class MainPage : ContentPage
         if (BindingContext is MainViewModel vm)
         {
             await vm.SaveAndCloseBoxAsync();
-            ScanEntry.Focus();
+            ScanSearchBar.Focus();
         }
     }
 }

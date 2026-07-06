@@ -27,12 +27,12 @@
                 </Grid>
 
                 <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#424242"/>
-                
-                <Entry x:Name="ScanEntry" 
-                       Text="{Binding ScanInput}" 
-                       Completed="OnScanEntryCompleted"
-                       ReturnType="Send"
-                       HorizontalOptions="FillAndExpand" />
+                <SearchBar x:Name="ScanSearchBar"
+                           Text="{Binding ScanInput}"
+                           SearchCommand="{Binding ProcessScanCommand}"
+                           SearchButtonPressed="OnScanSearchBarPressed" 
+                           Placeholder="Zeskanuj kod..."
+                           VerticalOptions="Center" />
                 <Label Text="{Binding StatusMessage}" 
                        FontSize="14" 
                        FontAttributes="Bold" 
