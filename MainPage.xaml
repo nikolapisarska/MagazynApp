@@ -19,7 +19,7 @@
         </Grid>
 
         <!-- SEKCJA 1: Skaner -->
-        <Border Grid.Row="1" StrokeShape="RoundRectangle 8" Margin="15,5,15,0" Padding="10">
+        <Border Grid.Row="1" StrokeShape="RoundRectangle 8" Margin="15,5,15,0" Padding="10" BackgroundColor="White">
             <VerticalStackLayout Spacing="8">
                 <Grid ColumnDefinitions="*, Auto">
                     <Label Text="Status: Aktywny" TextColor="#2E7D32" FontAttributes="Bold" FontSize="14"/>
@@ -31,7 +31,10 @@
                            SearchCommand="{Binding ProcessScanCommand}"
                            SearchButtonPressed="OnScanSearchBarPressed" 
                            Placeholder="Zeskanuj kod..."
-                           VerticalOptions="Center" />
+                           VerticalOptions="Center"
+                           BackgroundColor="White"
+                           TextColor="Black"
+                           PlaceholderColor="Gray" />
                 <Label Text="{Binding StatusMessage}" 
                        FontSize="14" 
                        FontAttributes="Bold" 
@@ -42,7 +45,7 @@
         </Border>
 
         <!-- SEKCJA 2: Szczegóły -->
-        <ScrollView Grid.Row="2" Padding="15,0,15,15">
+        <ScrollView Grid.Row="2" Padding="15,0,15,15" WidthRequest="{OnIdiom Desktop=600, Phone=-1}" HorizontalOptions="Center">
             <VerticalStackLayout Spacing="15" IsVisible="{Binding IsBoxOpen}">
                 
                 <!-- Kod kartonu -->
@@ -53,26 +56,26 @@
                        HorizontalOptions="Center"/>
 
                 <!-- Wymiary i Waga -->
-                <Border StrokeShape="RoundRectangle 8" Padding="10">
+                <Border StrokeShape="RoundRectangle 8" Padding="10" BackgroundColor="White">
                     <VerticalStackLayout Spacing="10">
                         <Label Text="Wymiary i waga (opcjonalne):" FontAttributes="Bold" FontSize="14" TextColor="#424242"/>
                         <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
                             <VerticalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Spacing="2">
                                 <Label Text="Waga (kg)" FontSize="12" TextColor="#757575"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Weight, Mode=TwoWay}" Placeholder="0.00"/>
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Weight, Mode=TwoWay}" Placeholder="0.00" TextColor="Black" BackgroundColor="White"/>
                             </VerticalStackLayout>
                             
                             <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="2">
                                 <Label Text="Dł. (cm)" FontSize="12" TextColor="#757575"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Length, Mode=TwoWay}" />
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Length, Mode=TwoWay}" TextColor="Black" BackgroundColor="White"/>
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="2">
                                 <Label Text="Szer. (cm)" FontSize="12" TextColor="#757575"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Width, Mode=TwoWay}" />
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Width, Mode=TwoWay}" TextColor="Black" BackgroundColor="White"/>
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Row="1" Grid.Column="2" Spacing="2">
                                 <Label Text="Wys. (cm)" FontSize="12" TextColor="#757575"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Height, Mode=TwoWay}" />
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Height, Mode=TwoWay}" TextColor="Black" BackgroundColor="White"/>
                             </VerticalStackLayout>
                         </Grid>
                     </VerticalStackLayout>
@@ -80,7 +83,7 @@
 
                 <!-- Zawartość -->
                 <Label Text="Zawartość:" FontAttributes="Bold" FontSize="14" Margin="0,5,0,-5" TextColor="#424242"/>
-                <Border StrokeShape="RoundRectangle 8" Padding="0">
+                <Border StrokeShape="RoundRectangle 8" Padding="0" BackgroundColor="White">
                     <CollectionView ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton. Zeskanuj produkty." HeightRequest="200">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
@@ -97,7 +100,9 @@
                                            Keyboard="Numeric" 
                                            WidthRequest="60" 
                                            HorizontalTextAlignment="Center"
-                                           VerticalOptions="Center"/>
+                                           VerticalOptions="Center"
+                                           TextColor="Black"
+                                           BackgroundColor="White"/>
 
                                     <!-- Przycisk usuwania -->
                                     <Button Grid.Column="2" 
