@@ -3,21 +3,23 @@ using MagazynApp.Model;
 
 namespace MagazynApp.Services;
 
-public class FileStorageService
+public class FileStorageService 
 {
-    private readonly string _folder;
+    private readonly string _folder; 
 
-    public FileStorageService()
+    public FileStorageService() 
     {
 #if DEBUG
-        if (OperatingSystem.IsWindows())
-            _folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "MagazynPrototypData");
-        else
-            _folder = FileSystem.AppDataDirectory;
+        // Uproszczona wersja działająca na obu systemach
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        _folder = Path.Combine(desktopPath, "MagazynPrototypData");
 #else
         _folder = FileSystem.AppDataDirectory;
 #endif
+
         if (!Directory.Exists(_folder)) Directory.CreateDirectory(_folder);
+        
+        System.Diagnostics.Debug.WriteLine($"!!! APLIKACJA UŻYWA FOLDERU: {_folder} !!!");
     }
 
     public async Task SaveFileAsync(string fileName, string content)

@@ -18,10 +18,17 @@ public class StorageService : IStorageService
         {
             var products = new List<Product>
             {
-                new() { Name = "Bompka ładna", CodeOrIdGraffiti = "12345" },
-                new() { Name = "Bompka ładniejsza", CodeOrIdGraffiti = "54321" },
-                new() { Name = "Bompka zwykła taka", CodeOrIdGraffiti = "99999" },
-                new() { Name = "Bompka taka inna", CodeOrIdGraffiti = "2137" }
+                new Product { Name = "Bompka ładna", CodeOrIdGraffiti = "12345" },
+                new Product { Name = "Bompka ladniejsza", CodeOrIdGraffiti = "54321" },
+                new Product { Name = "Bompka zwykla taka", CodeOrIdGraffiti = "99999" },
+                new Product { Name = "Bompka taka inna bo Szklana Czerwona 10cm", CodeOrIdGraffiti = "2137" },
+                new Product { Name = "Trzymak bompek", CodeOrIdGraffiti = "6767" },
+                new Product { Name = "Lancuch choinkowy zloty 2m", CodeOrIdGraffiti = "55555" },
+                new Product { Name = "Gwiazda na czubek choinki LED", CodeOrIdGraffiti = "44444" },
+                new Product { Name = "Lampki choinkowe 100pk cieple", CodeOrIdGraffiti = "33333" },
+                new Product { Name = "Stojak na choinke zielony", CodeOrIdGraffiti = "11111" },
+                new Product { Name = "Stojak na choinke niebieski", CodeOrIdGraffiti = "2121" },
+                new Product { Name = "meow", CodeOrIdGraffiti = "meow" },
             };
             
             var options = new JsonSerializerOptions { WriteIndented = true };

@@ -5,12 +5,36 @@ namespace MagazynApp.Model;
 
 public class Box
 {
+    private float _height;
+    private float _width;
+    private float _length;
+    private float _weight;
+
     public string BoxCode { get; set; } = string.Empty;
-    public float Height { get; set; }
-    public float Width { get; set; }
-    public float Length { get; set; }
-    public float Weight { get; set; }
-    
+
+    public float Height
+    {
+        get => _height;
+        set => _height = Math.Abs(value); // Zawsze zamieni na wartość dodatnią
+    }
+
+    public float Width
+    {
+        get => _width;
+        set => _width = Math.Abs(value);
+    }
+
+    public float Length
+    {
+        get => _length;
+        set => _length = Math.Abs(value);
+    }
+
+    public float Weight
+    {
+        get => _weight;
+        set => _weight = Math.Abs(value);
+    }
     // Ta lista jest używana w UI
     [JsonIgnore] 
     public List<BoxItem> Items { get; set; } = new List<BoxItem>();
