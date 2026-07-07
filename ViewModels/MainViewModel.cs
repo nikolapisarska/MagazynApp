@@ -47,7 +47,7 @@ public class MainViewModel : INotifyPropertyChanged
     }
 
     public bool IsBoxOpen => CurrentBox != null;
-    public ObservableCollection<BoxItem> CurrentItems { get; } = new();
+    public ObservableCollection<Box.BoxItem> CurrentItems { get; } = new();
 
     // Komendy
     public ICommand ProcessScanCommand { get; }
@@ -64,13 +64,13 @@ public class MainViewModel : INotifyPropertyChanged
         ProcessScanCommand = new Command(async () => await ExecuteProcessScanAsync());
         SaveAndCloseCommand = new Command(async () => await SaveAndCloseBoxAsync());
         ResetCommand = new Command(() => ResetUI());
-        RemoveItemCommand = new Command<BoxItem>(RemoveItem);
+        RemoveItemCommand = new Command<Box.BoxItem>(RemoveItem);
         
         // Rozpoczęcie importu danych w tle
         Task.Run(async () => await _storageService.ImportFromCsvAsync());
     }
 
-    private void RemoveItem(BoxItem item)
+    private void RemoveItem(Box.BoxItem item)
     {
         if (item != null && CurrentItems.Contains(item))
         {
@@ -107,7 +107,7 @@ public class MainViewModel : INotifyPropertyChanged
                 }
                 else
                 {
-                    var newItem = new BoxItem
+                    var newItem = new Box.BoxItem
                     {
                         BoxCode = CurrentBox.BoxCode,
                         ProductId = product.CodeOrIdGraffiti,
