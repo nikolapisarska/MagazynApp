@@ -91,6 +91,8 @@ public class MainViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
 
         string scannedCode = ScanInput.Trim();
+    
+           ScanInput = string.Empty; 
 
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)

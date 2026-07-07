@@ -14,10 +14,27 @@ public class StorageDb
     {
         if (_database != null) return;
 
-        var dbPath = Path.Combine(FileSystem.AppDataDirectory, "magazyn.db3");
-    
-        // DODAJ TĘ LINIĘ:
-        System.Diagnostics.Debug.WriteLine($"!!! BAZA DANYCH JEST TUTAJ: {dbPath} !!!");
+        string dbPath;
+
+#if DEBUG
+        // Sprawdzamy, czy aplikacja działa na komputerze (Windows/Mac)
+        // Jeśli tak, zapisujemy bazę na pulpicie, aby mieć do niej łatwy dostęp
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsMacOS())
+        {
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            dbPath = Path.Combine(desktopPath, "magazyn_debug.db3");
+        }
+        else
+        {
+            // Jeśli debugujesz na fizycznym telefonie/emulatorze (Android)
+            dbPath = Path.Combine(FileSystem.AppDataDirectory, "magazyn.db3");
+        }
+#else
+    // Wersja produkcyjna (Release) zawsze wewnątrz folderu aplikacji
+    dbPath = Path.Combine(FileSystem.AppDataDirectory, "magazyn.db3");
+#endif
+
+        System.Diagnostics.Debug.WriteLine($"!!! BAZA DANYCH ZNAJDUJE SIĘ TUTAJ: {dbPath} !!!");
 
         _database = new SQLiteAsyncConnection(dbPath);
         await _database.CreateTableAsync<Product>();
