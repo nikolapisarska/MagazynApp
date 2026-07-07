@@ -1,30 +1,33 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using MagazynApp.Model;
 using MagazynApp.Services;
-using CommunityToolkit.Mvvm.ComponentModel; // Używamy tego
-using CommunityToolkit.Mvvm.Input;          // Używamy tego
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace MagazynApp.ViewModels;
 
-// 1. Klasa musi być 'partial' i dziedziczyć po 'ObservableObject'
+// Klasa ViewModel odpowiedzialna za logikę strony głównej (MVVM)
 public partial class MainViewModel : ObservableObject 
 {
     private readonly IStorageService _storageService;
 
-    // 2. Automatyczne właściwości (zastępują ręczne get/set z OnPropertyChanged)
+    // Właściwość powiązana z polem tekstowym (SearchBar) w widoku
     [ObservableProperty]
     private string _scanInput = string.Empty;
 
+    // Właściwość wyświetlająca komunikaty statusu (np. "Dodano produkt")
     [ObservableProperty]
     private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
 
+    // Przechowuje aktualnie otwarty karton
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsBoxOpen))] // Automatycznie aktualizuje IsBoxOpen gdy CurrentBox się zmieni
+    [NotifyPropertyChangedFor(nameof(IsBoxOpen))] // Automatycznie odświeża IsBoxOpen, gdy zmieni się CurrentBox
     private Box? _currentBox;
 
+    // Zwraca informację, czy jakikolwiek karton jest obecnie otwarty
     public bool IsBoxOpen => CurrentBox != null;
+    
+    // Lista produktów znajdujących się w obecnie otwartym kartonie
     public ObservableCollection<Box.BoxItem> CurrentItems { get; } = new();
 
     public MainViewModel(IStorageService storageService)
@@ -32,7 +35,8 @@ public partial class MainViewModel : ObservableObject
         _storageService = storageService;
     }
 
-    // 3. Komendy tworzymy przez atrybut [RelayCommand]
+    // --- Komendy (Commands) wywoływane z przycisków w interfejsie ---
+    
     [RelayCommand]
     private async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
 
@@ -52,7 +56,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    // Logika biznesowa 
+    // Resetuje interfejs do stanu początkowego (zamyka karton)
     private void ResetUI()
     {
         CurrentBox = null;
@@ -60,19 +64,21 @@ public partial class MainViewModel : ObservableObject
         StatusMessage = "Zapisano. Zeskanuj nowy kod kartonu.";
     }
 
+    // Główna logika przetwarzania zeskanowanego kodu
     public async Task ExecuteProcessScanAsync()
     {
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
 
         string scannedCode = ScanInput.Trim();
-    
-           ScanInput = string.Empty; 
+        ScanInput = string.Empty; // Czyścimy pole wejściowe po przetworzeniu
 
+        // 1. Sprawdzamy czy zeskanowany kod to produkt
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
             if (CurrentBox != null)
             {
+                // Jeśli karton otwarty, dodaj produkt lub zwiększ ilość
                 var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
                 if (existingItem != null)
                 {
@@ -101,11 +107,13 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        // 2. Jeśli to nie produkt, sprawdzamy czy to karton (istniejący)
         var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
         if (existingBox != null)
         {
             if (CurrentBox != null)
             {
+                // Zamykamy poprzedni i otwieramy nowy
                 CurrentBox.Items = CurrentItems.ToList();
                 CurrentBox.PrepareForSave();
                 await _storageService.SaveBoxAsync(CurrentBox);
@@ -120,6 +128,7 @@ public partial class MainViewModel : ObservableObject
             }
             else
             {
+                // Otwieramy nowy karton
                 CurrentBox = existingBox;
                 CurrentBox.LoadAfterRead();
                 CurrentItems.Clear();
@@ -127,6 +136,7 @@ public partial class MainViewModel : ObservableObject
                 StatusMessage = $"Otwarto karton: {scannedCode}.";
             }
         }
+        // 3. Jeśli kod nie pasuje do produktu ani kartonu, tworzymy nowy karton
         else if (CurrentBox == null) 
         {
             CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
@@ -138,11 +148,11 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    // Metoda wywoływana przy starcie aplikacji, sprawdzająca bazę
     public async Task InitializeLocalDatabaseAsync()
     {
         try
         {
-            
             var testProduct = await _storageService.GetProductByCodeAsync("meow");
             if (testProduct == null)
             {
@@ -154,6 +164,8 @@ public partial class MainViewModel : ObservableObject
             System.Diagnostics.Debug.WriteLine($"Błąd inicjalizacji: {ex.Message}");
         }
     }
+
+    // Ręczny zapis i zamknięcie kartonu
     public async Task SaveAndCloseBoxAsync()
     {
         if (CurrentBox == null) return;
@@ -163,9 +175,4 @@ public partial class MainViewModel : ObservableObject
         StatusMessage = $"Karton {CurrentBox.BoxCode} zapisany.";
         ResetUI();
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    
 }
