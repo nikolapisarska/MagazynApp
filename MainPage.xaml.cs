@@ -49,4 +49,5 @@ public partial class MainPage : ContentPage
             ScanSearchBar.Focus();
         }
     }
+    
 }

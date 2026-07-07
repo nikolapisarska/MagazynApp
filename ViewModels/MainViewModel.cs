@@ -1,75 +1,48 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using Microsoft.Maui.Controls;
 using MagazynApp.Model;
 using MagazynApp.Services;
+using CommunityToolkit.Mvvm.ComponentModel; // Używamy tego
+using CommunityToolkit.Mvvm.Input;          // Używamy tego
 
 namespace MagazynApp.ViewModels;
 
-// Klasa ViewModel odpowiedzialna za logikę głównego widoku aplikacji
-public class MainViewModel : INotifyPropertyChanged
+// 1. Klasa musi być 'partial' i dziedziczyć po 'ObservableObject'
+public partial class MainViewModel : ObservableObject 
 {
     private readonly IStorageService _storageService;
 
-    // Pola prywatne przechowujące stan widoku
+    // 2. Automatyczne właściwości (zastępują ręczne get/set z OnPropertyChanged)
+    [ObservableProperty]
     private string _scanInput = string.Empty;
+
+    [ObservableProperty]
     private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsBoxOpen))] // Automatycznie aktualizuje IsBoxOpen gdy CurrentBox się zmieni
     private Box? _currentBox;
-
-    // Właściwości powiązane z widokiem
-    public string ScanInput
-    {
-        get => _scanInput;
-        set { _scanInput = value; OnPropertyChanged(); }
-    }
-
-    public string StatusMessage
-    {
-        get => _statusMessage;
-        set { _statusMessage = value; OnPropertyChanged(); }
-    }
-
-    public Box? CurrentBox
-    {
-        get => _currentBox;
-        set 
-        { 
-            _currentBox = value; 
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(IsBoxOpen));
-        }
-    }
 
     public bool IsBoxOpen => CurrentBox != null;
     public ObservableCollection<Box.BoxItem> CurrentItems { get; } = new();
 
-    // Komendy
-    public ICommand ProcessScanCommand { get; }
-    public ICommand SaveAndCloseCommand { get; }
-    public ICommand ResetCommand { get; }
-    public ICommand RemoveItemCommand { get; }
-
-    // Konstruktor przyjmujący interfejs serwisu (Wstrzykiwanie zależności)
     public MainViewModel(IStorageService storageService)
     {
         _storageService = storageService;
-
-        // Inicjalizacja komend
-        ProcessScanCommand = new Command(async () => await ExecuteProcessScanAsync());
-        SaveAndCloseCommand = new Command(async () => await SaveAndCloseBoxAsync());
-        ResetCommand = new Command(() => ResetUI());
-        RemoveItemCommand = new Command<Box.BoxItem>(RemoveItem);
-        
-        // Rozpoczęcie importu danych w tle
-        Task.Run(async () => await _storageService.ImportFromCsvAsync());
     }
 
+    // 3. Komendy tworzymy przez atrybut [RelayCommand]
+    [RelayCommand]
+    private async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
+
+    [RelayCommand]
+    private async Task SaveAndCloseAsync() => await SaveAndCloseBoxAsync();
+
+    [RelayCommand]
+    private void Reset() => ResetUI();
+
+    [RelayCommand]
     private void RemoveItem(Box.BoxItem item)
     {
         if (item != null && CurrentItems.Contains(item))
@@ -79,11 +52,12 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    // Logika biznesowa 
     private void ResetUI()
     {
         CurrentBox = null;
         CurrentItems.Clear();
-        StatusMessage = "Zapiano. Zeskanuj nowy kod kartonu.";
+        StatusMessage = "Zapisano. Zeskanuj nowy kod kartonu.";
     }
 
     public async Task ExecuteProcessScanAsync()
@@ -168,11 +142,11 @@ public class MainViewModel : INotifyPropertyChanged
     {
         try
         {
+            
             var testProduct = await _storageService.GetProductByCodeAsync("meow");
             if (testProduct == null)
             {
-                bool success = await _storageService.ImportFromCsvAsync(); 
-                if (success) StatusMessage = "Baza produktów załadowana.";
+                StatusMessage = "Baza produktów gotowa do pracy.";
             }
         }
         catch (Exception ex)
