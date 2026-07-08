@@ -18,8 +18,7 @@ public partial class MainPage : ContentPage
         {
             await vm.InitializeLocalDatabaseAsync();
         }
-
-        // Zmieniono z ScanEntry na ScanSearchBar
+        
         ScanSearchBar.Focus();
     }
 

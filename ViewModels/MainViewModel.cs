@@ -29,7 +29,7 @@ public partial class MainViewModel : ObservableObject
         _storageService = storageService;
     }
 
-    // --- Logika pomocnicza ---
+    //Logika pomocnicza 
 
     private void UpdateListIndices()
     {
@@ -41,7 +41,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    // --- Komendy ---
+    //Komendy 
 
     [RelayCommand]
     private async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
@@ -49,7 +49,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveAndCloseAsync() => await SaveAndCloseBoxAsync();
 
-// --- Inicjalizacja ---
+// Inicjalizacja 
 
     public async Task InitializeLocalDatabaseAsync()
     {
@@ -67,7 +67,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    // --- Logika Główna ---
+    // Logika Główna 
 
     public async Task ExecuteProcessScanAsync()
     {
@@ -153,17 +153,17 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private void RemoveItem(Box.BoxItem item)
+  [RelayCommand]
+private void RemoveItem(Box.BoxItem item)
+{
+    if (item != null && CurrentItems.Contains(item))
     {
-        if (item != null && CurrentItems.Contains(item))
-        {
-            CurrentItems.Remove(item);
-            UpdateListIndices();
-            SaveCurrentBoxInternal(); // Metoda, która zapisuje obecny stan do pliku
-            StatusMessage = $"Usunięto: {item.ProductName}";
-        }
+        CurrentItems.Remove(item);
+        UpdateListIndices();
+        SaveCurrentBoxInternal(); // Metoda, która zapisuje obecny stan do pliku
+        StatusMessage = $"Usunięto: {item.ProductName}";
     }
+}
 
 // Metoda pomocnicza zapewniająca synchronizację danych
     private void SaveCurrentBoxInternal()
@@ -171,12 +171,10 @@ public partial class MainViewModel : ObservableObject
         if (CurrentBox != null)
         {
             CurrentBox.Items = CurrentItems.ToList();
-            CurrentBox.PrepareForSave(); // Ważne: synchronizacja JSONa
+            CurrentBox.PrepareForSave(); // synchronizacja JSONa
             _ = _storageService.SaveBoxAsync(CurrentBox);
         }
     }
-
-// Zaktualizuj również metodę SaveAndCloseBoxAsync, aby korzystała z tego samego wzorca:
     public async Task SaveAndCloseBoxAsync()
     {
         if (CurrentBox == null) return;
