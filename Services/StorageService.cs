@@ -67,7 +67,7 @@ public class StorageService : IStorageService
 
             if (box != null)
             {
-                box.LoadAfterRead(); // Bardzo ważne!
+                box.LoadAfterRead(); 
             
         
                 if (box.IsClosed && box.Items.Any(i => i.ProductId == productCode))

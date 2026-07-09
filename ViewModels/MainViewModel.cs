@@ -53,6 +53,9 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex.Message); }
     }
 
+    [ObservableProperty]
+    private Product? _foundProduct; // Dodaj to pole
+
     public async Task ExecuteProcessScanAsync()
     {
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
@@ -62,6 +65,10 @@ public partial class MainViewModel : ObservableObject
 
         // 1. Sprawdź czy to produkt
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
+    
+        // Ustawiamy produkt jako znaleziony, niezależnie od tego czy dodaliśmy go do kartonu
+        FoundProduct = product; 
+
         if (product != null)
         {
             // Jeśli mamy otwarty karton - dodaj produkt
@@ -85,8 +92,8 @@ public partial class MainViewModel : ObservableObject
             FoundClosedBoxes.Clear();
             var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
             foreach (var b in boxes) FoundClosedBoxes.Add(b);
-            
-            StatusMessage = FoundClosedBoxes.Any() ? $"Znaleziono {boxes.Count} zamkniętych kartonów." : "Najpierw zeskanuj kod kartonu!";
+        
+            StatusMessage = $"Znaleziono produkt: {product.Name}";
             return;
         }
 
