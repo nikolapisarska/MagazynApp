@@ -153,14 +153,15 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-  [RelayCommand]
-private void RemoveItem(Box.BoxItem item)
-{
-    if (item != null && CurrentItems.Contains(item))
+    [RelayCommand]
+    private void RemoveItem(Box.BoxItem item)
     {
-        CurrentItems.Remove(item);
-        UpdateListIndices();
-        SaveCurrentBoxInternal(); // Metoda, która zapisuje obecny stan do pliku
+        // Kompilator wie, że item nie jest nullem, jeśli metoda została wywołana
+        if (CurrentItems.Contains(item))
+        {
+            CurrentItems.Remove(item);
+            UpdateListIndices();
+        SaveCurrentBoxInternal(); 
         StatusMessage = $"Usunięto: {item.ProductName}";
     }
 }

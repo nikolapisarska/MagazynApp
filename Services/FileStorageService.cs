@@ -7,28 +7,20 @@ public class FileStorageService
 {
     private readonly string _folder; 
 
-  public FileStorageService() 
-{
-#if DEBUG
-    // Sprawdzamy, czy jesteśmy na komputerze (Windows/macOS) czy w mobilnym systemie
-    if (OperatingSystem.IsMacOS() || OperatingSystem.IsWindows())
+    public FileStorageService() 
     {
+#if DEBUG
+        // Uproszczona wersja działająca na obu systemach
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         _folder = Path.Combine(desktopPath, "MagazynPrototypData");
-    }
-    else
-    {
-        // Jeśli jesteśmy w symulatorze Androida, używamy folderu aplikacji
-        _folder = FileSystem.AppDataDirectory;
-    }
 #else
-    _folder = FileSystem.AppDataDirectory;
+        _folder = FileSystem.AppDataDirectory;
 #endif
 
-    if (!Directory.Exists(_folder)) Directory.CreateDirectory(_folder);
-    
-    System.Diagnostics.Debug.WriteLine($"!!! APLIKACJA UŻYWA FOLDERU: {_folder} !!!");
-}
+        if (!Directory.Exists(_folder)) Directory.CreateDirectory(_folder);
+        
+        System.Diagnostics.Debug.WriteLine($"!!! APLIKACJA UŻYWA FOLDERU: {_folder} !!!");
+    }
 
     public async Task SaveFileAsync(string fileName, string content)
     {
@@ -67,3 +59,4 @@ public class FileStorageService
         await File.WriteAllTextAsync(path, json);
     }
 }
+

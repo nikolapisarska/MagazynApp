@@ -29,6 +29,9 @@ public class StorageService : IStorageService
                 new Product { Name = "Stojak na choinke zielony", CodeOrIdGraffiti = "11111" },
                 new Product { Name = "Stojak na choinke niebieski", CodeOrIdGraffiti = "2121" },
                 new Product { Name = "meow", CodeOrIdGraffiti = "meow" },
+                new Product { Name = "0000", CodeOrIdGraffiti = "0000" },
+                new Product {Name = "Bompka", CodeOrIdGraffiti = "2005" },
+                new Product {Name = "Bompka2", CodeOrIdGraffiti = "2004" },
             };
             var options = new JsonSerializerOptions { WriteIndented = true };
             var json = JsonSerializer.Serialize(products, options);
@@ -39,7 +42,7 @@ public class StorageService : IStorageService
     public async Task<Product?> GetProductByCodeAsync(string code)
     {
         if (_productCache == null) 
-            _productCache = await _fileService.LoadAllProductsAsync(); // Tutaj upewnij się, że w FileStorageService wczytujesz z JSON
+            _productCache = await _fileService.LoadAllProductsAsync();
             
         return _productCache?.FirstOrDefault(p => p.CodeOrIdGraffiti == code);
     }
