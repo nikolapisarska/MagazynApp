@@ -53,4 +53,29 @@ public class StorageService : IStorageService
     public async Task SaveBoxAsync(Box box) => await _fileService.SaveFileAsync($"box_{box.BoxCode}.json", JsonSerializer.Serialize(box));
 
     public async Task<Box?> GetBoxByCodeAsync(string boxCode) => await _fileService.LoadBoxAsync(boxCode);
+    public async Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode)
+    {
+        var closedBoxes = new List<Box>();
+        // Pobieramy ścieżkę z FileStorageService
+        var folderPath = _fileService.GetFolderPath(); 
+        var files = Directory.GetFiles(folderPath, "box_*.json");
+        System.Diagnostics.Debug.WriteLine($"Znaleziono {files.Length} plików kartonów w {folderPath}");
+        foreach (var file in files)
+        {
+            var json = await File.ReadAllTextAsync(file);
+            var box = JsonSerializer.Deserialize<Box>(json);
+
+            if (box != null)
+            {
+                box.LoadAfterRead(); // Bardzo ważne!
+            
+        
+                if (box.IsClosed && box.Items.Any(i => i.ProductId == productCode))
+                {
+                    closedBoxes.Add(box);
+                }
+            }
+        }
+        return closedBoxes;
+    }
 }

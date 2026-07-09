@@ -58,5 +58,6 @@ public class FileStorageService
         var json = JsonSerializer.Serialize(box, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(path, json);
     }
+    public string GetFolderPath() => _folder;
 }
 

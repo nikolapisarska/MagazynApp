@@ -17,7 +17,9 @@ public partial class Box
     public float Width { get => _width; set => _width = Math.Abs(value); }
     public float Length { get => _length; set => _length = Math.Abs(value); }
     public float Weight { get => _weight; set => _weight = Math.Abs(value); }
-
+    
+    [JsonInclude]
+    public bool IsClosed { get; set; } = false;
     [JsonIgnore] 
     public List<BoxItem> Items { get; set; } = new List<BoxItem>();
     

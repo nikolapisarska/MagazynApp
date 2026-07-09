@@ -8,4 +8,5 @@ public interface IStorageService
     Task<Box> GetOrCreateBoxAsync(string boxCode);
     Task SaveBoxAsync(Box box);
     Task<Box?> GetBoxByCodeAsync(string boxCode);
+    Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode);
 }
