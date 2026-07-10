@@ -14,7 +14,7 @@ public partial class DashboardPage : ContentPage
     }
     private async void OnVerifyCartonClicked(object sender, EventArgs e)
     {
-        // Zakładając, że stworzysz stronę o nazwie CartonVerificationPage
+
         await Navigation.PushAsync(new CartonVerificationPage());
     }
 }

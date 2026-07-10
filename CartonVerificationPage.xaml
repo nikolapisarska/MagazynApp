@@ -1,15 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MagazynApp.ViewModels"
+             xmlns:model="clr-namespace:MagazynApp.Model"
              x:Class="MagazynApp.CartonVerificationPage"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
-    <Grid RowDefinitions="Auto, Auto, *, Auto" Padding="20">
+
+    <Grid RowDefinitions="Auto, Auto, *" RowSpacing="10">
         
-        <Entry Grid.Row="0" 
-               Placeholder="Skanuj kod kartonu..." 
-               Text="{Binding ScanInput}" 
-               ReturnCommand="{Binding ProcessScanCommand}" 
-               BackgroundColor="#2D2D2D" TextColor="White"/>
+        <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
+            <Label Text="Panel Magazynowy" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+        </Grid>
+            <Grid Grid.Row="0" HeightRequest="60" ColumnDefinitions="Auto, *">
+                <Button Grid.Column="0"
+                        Text="&#x2190;" 
+                        FontAttributes="Bold"
+                        FontSize="30"
+                        TextColor="#2D2D2D" 
+                        BackgroundColor="Transparent"
+                        Clicked="OnBackButtonClicked" 
+                        VerticalOptions="Center"/>
+                
+        </Grid>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="8" Margin="0,10,0,10">
+            <Label Text="Status: Aktywny" TextColor="#81C784" FontAttributes="Bold" FontSize="14"/>
+            <Label Text="Zeskanuj kod produktu:" FontAttributes="Bold" FontSize="13" TextColor="#BDBDBD"/>
+            
+            <SearchBar x:Name="ScanSearchBar"
+                       Text="{Binding ScanInput}"
+                       SearchCommand="{Binding ProcessScanCommand}"
+                       Placeholder="Zeskanuj kod..."
+                       PlaceholderColor="Gray"
+                       TextColor="White" 
+                       BackgroundColor="#424242" />
+
+            <Label Text="{Binding StatusMessage}" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#81C784"/>
+        </VerticalStackLayout>
 
         <CollectionView Grid.Row="2" ItemsSource="{Binding CurrentItems}">
             <CollectionView.ItemTemplate>
@@ -22,9 +50,5 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
-
-        <Button Grid.Row="3" Text="ZATWIERDŹ STAN" 
-                Command="{Binding SaveAndCloseCommand}"
-                BackgroundColor="#00C853" TextColor="White" />
     </Grid>
 </ContentPage>
