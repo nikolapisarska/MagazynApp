@@ -54,75 +54,88 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private Product? _foundProduct;
 
     public async Task ExecuteProcessScanAsync()
+{
+    if (string.IsNullOrWhiteSpace(ScanInput)) return;
+
+    string scannedCode = ScanInput.Trim();
+    ScanInput = string.Empty;
+
+    // 1. Sprawdź, czy skanowany kod to produkt
+    var product = await _storageService.GetProductByCodeAsync(scannedCode);
+    if (product != null)
     {
-        if (string.IsNullOrWhiteSpace(ScanInput)) return;
-
-        string scannedCode = ScanInput.Trim();
-        ScanInput = string.Empty;
-
-        var product = await _storageService.GetProductByCodeAsync(scannedCode);
-        
-        if (product != null)
+        FoundProduct = product;
+        if (CurrentBox != null)
         {
-            FoundProduct = product;
-            if (CurrentBox != null)
+            var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
+            if (existingItem != null)
             {
-                var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
-                if (existingItem != null)
-                {
-                    existingItem.Quantity += 1;
-                }
-                else
-                {
-                    var newItem = new Item 
-                    { 
-                        ProductId = product.CodeOrIdGraffiti, 
-                        ProductSku = product.CodeOrIdGraffiti, 
-                        ProductName = product.Name, 
-                        Quantity = 1 
-                    };
-                    CurrentItems.Add(newItem);
-                    CurrentBox.Items.Add(newItem);
-                    UpdateListIndices();
-                }
-                await SaveCurrentBoxInternal();
-                StatusMessage = $"Dodano: {product.Name}";
+                existingItem.Quantity += 1;
             }
             else
             {
-                FoundClosedBoxes.Clear();
-                var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
-                foreach (var b in boxes) FoundClosedBoxes.Add(b);
-                StatusMessage = $"Znaleziono: {product.Name}. Zeskanuj karton, aby dodać.";
+                var newItem = new Item 
+                { 
+                    ProductId = product.CodeOrIdGraffiti, 
+                    ProductSku = product.CodeOrIdGraffiti, 
+                    ProductName = product.Name, 
+                    Quantity = 1 
+                };
+                CurrentItems.Add(newItem);
+                CurrentBox.Items.Add(newItem);
+                UpdateListIndices();
             }
-            return;
-        }
-
-        var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
-        if (existingBox != null)
-        {
-            if (CurrentBox != null) await SaveAndCloseBoxAsync();
-            
-            CurrentBox = existingBox;
-            CurrentBox.LoadAfterRead();
-            CurrentBox.IsClosed = false;
-            CurrentItems.Clear();
-            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
-            UpdateListIndices();
-            FoundClosedBoxes.Clear();
-            StatusMessage = $"Otwarto karton: {scannedCode}.";
+            await SaveCurrentBoxInternal();
+            StatusMessage = $"Dodano: {product.Name}";
         }
         else
         {
-            if (CurrentBox != null) await SaveAndCloseBoxAsync();
-            
-            CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
-            CurrentBox.IsClosed = false;
-            CurrentItems.Clear();
-            UpdateListIndices();
-            StatusMessage = $"Utworzono nowy karton: {scannedCode}.";
+            FoundClosedBoxes.Clear();
+            var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
+            foreach (var b in boxes) FoundClosedBoxes.Add(b);
+            StatusMessage = $"Znaleziono: {product.Name}. Zeskanuj karton, aby dodać.";
         }
+        return;
     }
+
+    // 2. Jeśli to nie produkt, sprawdź czy to karton
+    if (CurrentBox != null)
+    {
+        StatusMessage = "Najpierw zamknij otwarty karton!";
+        return; // Przerywa działanie, nie otwiera nowego kartonu
+    }
+
+    var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
+    if (existingBox != null)
+    {
+        // Jeśli mamy otwarty karton, zamknij go przed otwarciem kolejnego
+        if (CurrentBox != null) await SaveAndCloseBoxAsync();
+        
+        CurrentBox = existingBox;
+        CurrentBox.LoadAfterRead();
+        CurrentBox.IsClosed = false;
+        CurrentItems.Clear();
+        foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
+        UpdateListIndices();
+        FoundClosedBoxes.Clear();
+        StatusMessage = $"Otwarto karton: {scannedCode}.";
+    }
+    else
+    {
+        // To jest nowy karton - nie ma go w bazie
+        if (CurrentBox != null) await SaveAndCloseBoxAsync();
+        
+        CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
+        CurrentBox.IsClosed = false;
+        
+        // ZAPIS DO BAZY: To sprawi, że karton fizycznie pojawi się w pliku .db3
+        await _storageService.SaveBoxAsync(CurrentBox);
+        
+        CurrentItems.Clear();
+        UpdateListIndices();
+        StatusMessage = $"Utworzono nowy karton: {scannedCode}.";
+    }
+}
 
     private async Task SaveCurrentBoxInternal()
     {
