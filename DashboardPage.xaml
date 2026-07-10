@@ -31,14 +31,6 @@
                     BorderColor="#fcc821" BorderWidth="1" HeightRequest="60" Margin="0,50,0,0"/>
             <Label Text="Skanuj kod, zobacz co jest w środku" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
         </VerticalStackLayout>
-
-        <Label Text="Szybkie akcje:" TextColor="White" FontAttributes="Bold" Margin="0,50,0,0"/>
-        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
-            <Button Grid.Column="0" Text="Edycja" BackgroundColor="#333333" FontSize="12"/>
-            <Button Grid.Column="1" Text="Eksport" BackgroundColor="#333333" FontSize="12"/>
-            <Button Grid.Column="2" Text="Import" BackgroundColor="#333333" FontSize="12"/>
-            <Button Grid.Column="3" Text="Zaginięcia" BackgroundColor="#333333" FontSize="12"/>
-        </Grid>
         
     </VerticalStackLayout>
 </ContentPage>
