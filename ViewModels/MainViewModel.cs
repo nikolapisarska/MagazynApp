@@ -10,21 +10,16 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IStorageService _storageService;
 
-    [ObservableProperty]
-    private string _scanInput = string.Empty;
-
-    [ObservableProperty]
-    private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
-
-    [ObservableProperty]
+    [ObservableProperty] private string _scanInput = string.Empty;
+    [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
+    
+    [ObservableProperty] 
     [NotifyPropertyChangedFor(nameof(IsBoxOpen))]
     private Box? _currentBox;
 
     public bool IsBoxOpen => CurrentBox != null;
 
-    public ObservableCollection<Box.BoxItem> CurrentItems { get; } = new();
-    
-    // Kolekcja dla wyszukanych kartonów
+    public ObservableCollection<Item> CurrentItems { get; } = new();
     public ObservableCollection<Box> FoundClosedBoxes { get; } = new();
 
     public MainViewModel(IStorageService storageService)
@@ -47,14 +42,16 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveAndCloseAsync() => await SaveAndCloseBoxAsync();
 
-    public async Task InitializeLocalDatabaseAsync()
+    [RelayCommand]
+    private async Task RemoveItem(Item item)
     {
-        try { var testProduct = await _storageService.GetProductByCodeAsync("meow"); }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex.Message); }
+        CurrentItems.Remove(item);
+        CurrentBox?.Items.Remove(item);
+        UpdateListIndices();
+        await SaveCurrentBoxInternal();
     }
 
-    [ObservableProperty]
-    private Product? _foundProduct; // Dodaj to pole
+    [ObservableProperty] private Product? _foundProduct;
 
     public async Task ExecuteProcessScanAsync()
     {
@@ -63,41 +60,44 @@ public partial class MainViewModel : ObservableObject
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty;
 
-        // 1. Sprawdź czy to produkt
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
-    
-        // Ustawiamy produkt jako znaleziony, niezależnie od tego czy dodaliśmy go do kartonu
-        FoundProduct = product; 
-
+        
         if (product != null)
         {
-            // Jeśli mamy otwarty karton - dodaj produkt
+            FoundProduct = product;
             if (CurrentBox != null)
             {
                 var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
-                if (existingItem != null) existingItem.Quantity += 1;
+                if (existingItem != null)
+                {
+                    existingItem.Quantity += 1;
+                }
                 else
                 {
-                    var newItem = new Box.BoxItem { BoxCode = CurrentBox.BoxCode, ProductId = product.CodeOrIdGraffiti, ProductSku = product.CodeOrIdGraffiti, ProductName = product.Name, Quantity = 1 };
-                    CurrentBox.Items.Add(newItem);
+                    var newItem = new Item 
+                    { 
+                        ProductId = product.CodeOrIdGraffiti, 
+                        ProductSku = product.CodeOrIdGraffiti, 
+                        ProductName = product.Name, 
+                        Quantity = 1 
+                    };
                     CurrentItems.Add(newItem);
+                    CurrentBox.Items.Add(newItem);
                     UpdateListIndices();
                 }
-                SaveCurrentBoxInternal();
-                StatusMessage = $"Dodano/Zwiększono: {product.Name}";
-                return;
+                await SaveCurrentBoxInternal();
+                StatusMessage = $"Dodano: {product.Name}";
             }
-            
-            // Jeśli karton nie jest otwarty - szukaj zamkniętych kartonów z tym produktem
-            FoundClosedBoxes.Clear();
-            var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
-            foreach (var b in boxes) FoundClosedBoxes.Add(b);
-        
-            StatusMessage = $"Znaleziono produkt: {product.Name}";
+            else
+            {
+                FoundClosedBoxes.Clear();
+                var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
+                foreach (var b in boxes) FoundClosedBoxes.Add(b);
+                StatusMessage = $"Znaleziono: {product.Name}. Zeskanuj karton, aby dodać.";
+            }
             return;
         }
 
-        // 2. Sprawdź czy to karton
         var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
         if (existingBox != null)
         {
@@ -105,28 +105,32 @@ public partial class MainViewModel : ObservableObject
             
             CurrentBox = existingBox;
             CurrentBox.LoadAfterRead();
-            CurrentBox.IsClosed = false; // Otwieramy go
+            CurrentBox.IsClosed = false;
             CurrentItems.Clear();
             foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
             UpdateListIndices();
-            FoundClosedBoxes.Clear(); // Czyścimy wyniki wyszukiwania
+            FoundClosedBoxes.Clear();
             StatusMessage = $"Otwarto karton: {scannedCode}.";
         }
-        else if (CurrentBox == null)
+        else
         {
+            if (CurrentBox != null) await SaveAndCloseBoxAsync();
+            
             CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
             CurrentBox.IsClosed = false;
+            CurrentItems.Clear();
+            UpdateListIndices();
             StatusMessage = $"Utworzono nowy karton: {scannedCode}.";
         }
     }
 
-    private void SaveCurrentBoxInternal()
+    private async Task SaveCurrentBoxInternal()
     {
         if (CurrentBox != null)
         {
             CurrentBox.Items = CurrentItems.ToList();
             CurrentBox.PrepareForSave();
-            _ = _storageService.SaveBoxAsync(CurrentBox);
+            await _storageService.SaveBoxAsync(CurrentBox);
         }
     }
 
@@ -135,10 +139,22 @@ public partial class MainViewModel : ObservableObject
         if (CurrentBox == null) return;
         
         CurrentBox.IsClosed = true; 
-        SaveCurrentBoxInternal();
+        await SaveCurrentBoxInternal();
         
-        StatusMessage = $"Karton {CurrentBox.BoxCode} zamknięty i zapisany.";
+        StatusMessage = $"Karton {CurrentBox.BoxCode} zamknięty.";
         CurrentBox = null;
         CurrentItems.Clear();
+    }
+    public async Task InitializeLocalDatabaseAsync()
+    {
+        try 
+        { 
+            // Tutaj możesz dodać dowolną logikę inicjalizacji, jeśli jest potrzebna
+            System.Diagnostics.Debug.WriteLine("Baza danych została zainicjalizowana.");
+        }
+        catch (Exception ex) 
+        { 
+            System.Diagnostics.Debug.WriteLine(ex.Message); 
+        }
     }
 }

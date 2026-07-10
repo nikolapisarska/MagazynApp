@@ -94,7 +94,7 @@
 
                         <CollectionView ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton.">
                             <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="model:Box+BoxItem">
+                                <DataTemplate x:DataType="model:Item">
                                     <Grid RowDefinitions="45,1" RowSpacing="0">
                                         <Grid Grid.Row="0" ColumnDefinitions="40,120,*,80" BackgroundColor="#2B2B2B">
                                             <Grid.Triggers>

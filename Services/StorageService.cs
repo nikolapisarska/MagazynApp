@@ -1,81 +1,61 @@
-using System.Text.Json;
+using SQLite;
 using MagazynApp.Model;
 
 namespace MagazynApp.Services;
 
 public class StorageService : IStorageService
 {
-    private readonly FileStorageService _fileService = new();
-    private List<Product>? _productCache;
+    private SQLiteAsyncConnection? _db;
+    private readonly string _dbPath = Path.Combine(FileSystem.AppDataDirectory, "Magazyn.db3");
+    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private bool _isInitialized = false;
 
-    public StorageService() => _ = InitializeMockData();
-
-    private async Task InitializeMockData()
+    private async Task EnsureInitializedAsync()
     {
-        string fileName = "products.json";
-        
-        if (!_fileService.FileExists(fileName))
+        if (_isInitialized) return;
+        await _semaphore.WaitAsync();
+        try
         {
-            var products = new List<Product>
+            if (!_isInitialized)
             {
-                new Product { Name = "Bompka ładna", CodeOrIdGraffiti = "12345" },
-                new Product { Name = "Bompka ladniejsza", CodeOrIdGraffiti = "54321" },
-                new Product { Name = "Bompka zwykla taka", CodeOrIdGraffiti = "99999" },
-                new Product { Name = "Bompka taka inna bo Szklana Czerwona 10cm", CodeOrIdGraffiti = "2137" },
-                new Product { Name = "Trzymak bompek", CodeOrIdGraffiti = "6767" },
-                new Product { Name = "Lancuch choinkowy zloty 2m", CodeOrIdGraffiti = "55555" },
-                new Product { Name = "Gwiazda na czubek choinki LED", CodeOrIdGraffiti = "44444" },
-                new Product { Name = "Lampki choinkowe 100pk cieple", CodeOrIdGraffiti = "33333" },
-                new Product { Name = "Stojak na choinke zielony", CodeOrIdGraffiti = "11111" },
-                new Product { Name = "Stojak na choinke niebieski", CodeOrIdGraffiti = "2121" },
-                new Product { Name = "meow", CodeOrIdGraffiti = "meow" },
-                new Product { Name = "0000", CodeOrIdGraffiti = "0000" },
-                new Product {Name = "Bompka", CodeOrIdGraffiti = "2005" },
-                new Product {Name = "Bompka2", CodeOrIdGraffiti = "2004" },
-            };
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            var json = JsonSerializer.Serialize(products, options);
-            await _fileService.SaveFileAsync(fileName, json);
-        }
-    }
-
-    public async Task<Product?> GetProductByCodeAsync(string code)
-    {
-        if (_productCache == null) 
-            _productCache = await _fileService.LoadAllProductsAsync();
-            
-        return _productCache?.FirstOrDefault(p => p.CodeOrIdGraffiti == code);
-    }
-
-    public async Task<Box> GetOrCreateBoxAsync(string boxCode) => 
-        (await _fileService.LoadBoxAsync(boxCode)) ?? new Box { BoxCode = boxCode };
-
-    public async Task SaveBoxAsync(Box box) => await _fileService.SaveFileAsync($"box_{box.BoxCode}.json", JsonSerializer.Serialize(box));
-
-    public async Task<Box?> GetBoxByCodeAsync(string boxCode) => await _fileService.LoadBoxAsync(boxCode);
-    public async Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode)
-    {
-        var closedBoxes = new List<Box>();
-        // Pobieramy ścieżkę z FileStorageService
-        var folderPath = _fileService.GetFolderPath(); 
-        var files = Directory.GetFiles(folderPath, "box_*.json");
-        System.Diagnostics.Debug.WriteLine($"Znaleziono {files.Length} plików kartonów w {folderPath}");
-        foreach (var file in files)
-        {
-            var json = await File.ReadAllTextAsync(file);
-            var box = JsonSerializer.Deserialize<Box>(json);
-
-            if (box != null)
-            {
-                box.LoadAfterRead(); 
-            
-        
-                if (box.IsClosed && box.Items.Any(i => i.ProductId == productCode))
-                {
-                    closedBoxes.Add(box);
-                }
+                _db = new SQLiteAsyncConnection(_dbPath);
+                await _db.CreateTableAsync<Product>();
+                await _db.CreateTableAsync<Box>();
+                _isInitialized = true;
             }
         }
-        return closedBoxes;
+        finally { _semaphore.Release(); }
+    }
+
+    public async Task<Product?> GetProductByCodeAsync(string code) 
+    {
+        await EnsureInitializedAsync();
+        return await _db!.Table<Product>().FirstOrDefaultAsync(p => p.CodeOrIdGraffiti == code);
+    }
+
+    public async Task<Box> GetOrCreateBoxAsync(string boxCode)
+    {
+        await EnsureInitializedAsync();
+        var box = await GetBoxByCodeAsync(boxCode);
+        return box ?? new Box { BoxCode = boxCode };
+    }
+
+    public async Task SaveBoxAsync(Box box) 
+    {
+        await EnsureInitializedAsync();
+        await _db!.InsertOrReplaceAsync(box);
+    }
+
+    public async Task<Box?> GetBoxByCodeAsync(string boxCode) 
+    {
+        await EnsureInitializedAsync();
+        return await _db!.Table<Box>().FirstOrDefaultAsync(b => b.BoxCode == boxCode);
+    }
+
+    public async Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode)
+    {
+        await EnsureInitializedAsync();
+        var allClosed = await _db!.Table<Box>().Where(b => b.IsClosed).ToListAsync();
+        return allClosed.Where(b => b.Items.Any(i => i.ProductId == productCode)).ToList();
     }
 }

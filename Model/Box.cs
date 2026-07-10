@@ -1,59 +1,38 @@
+using SQLite;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MagazynApp.Model;
 
-public partial class Box
+public class Item
 {
-    private float _height;
-    private float _width;
-    private float _length;
-    private float _weight;
+    public string ProductId { get; set; }
+    public string ProductSku { get; set; }
+    public string ProductName { get; set; }
+    public int Quantity { get; set; }
+    
+    // Pola pomocnicze dla UI (nie muszą być w bazie)
+    [Ignore]
+    public int Lp { get; set; }
+    [Ignore]
+    public bool IsEven { get; set; }
+}
 
+public class Box
+{
+    [PrimaryKey]
     public string BoxCode { get; set; } = string.Empty;
+    public bool IsClosed { get; set; }
+    
+    [Ignore]
+    public List<Item> Items { get; set; } = new();
 
-    public float Height { get => _height; set => _height = Math.Abs(value); }
-    public float Width { get => _width; set => _width = Math.Abs(value); }
-    public float Length { get => _length; set => _length = Math.Abs(value); }
-    public float Weight { get => _weight; set => _weight = Math.Abs(value); }
-    
-    
-    [JsonInclude]
-    public bool IsClosed { get; set; } = false;
-    [JsonIgnore] 
-    public List<BoxItem> Items { get; set; } = new List<BoxItem>();
-    
-    public string ItemsJson { get; set; } = "[]";
-
-    public void PrepareForSave()
-    {
-        ItemsJson = JsonSerializer.Serialize(Items);
+    public string ItemsJson 
+    { 
+        get => JsonSerializer.Serialize(Items);
+        set => Items = JsonSerializer.Deserialize<List<Item>>(value) ?? new List<Item>();
     }
 
-    public void LoadAfterRead()
-    {
-        if (!string.IsNullOrEmpty(ItemsJson))
-        {
-            Items = JsonSerializer.Deserialize<List<BoxItem>>(ItemsJson) ?? new List<BoxItem>();
-        }
-    }
-
-    public partial class BoxItem : ObservableObject
-    {
-        public string BoxCode { get; set; } = string.Empty;
-        public string ProductId { get; set; } = string.Empty;
-        public string ProductName { get; set; } = string.Empty;
-        public string ProductSku { get; set; } = string.Empty;
-        public string ExpectedVsConfirmed => $"{Quantity} szt.";
-        [ObservableProperty]
-        private int _quantity = 1;
-
-        // Nowe pola
-        [ObservableProperty]
-        private int _lp;
-
-        [ObservableProperty]
-        private bool _isEven;
-    }
+    // Metody wymagane przez Twój ViewModel
+    public void LoadAfterRead() { /* Dodatkowa logika po odczycie, jeśli potrzebna */ }
+    public void PrepareForSave() { /* Dodatkowa logika przed zapisem, jeśli potrzebna */ }
 }
