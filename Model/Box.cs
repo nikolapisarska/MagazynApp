@@ -18,6 +18,7 @@ public partial class Box
     public float Length { get => _length; set => _length = Math.Abs(value); }
     public float Weight { get => _weight; set => _weight = Math.Abs(value); }
     
+    
     [JsonInclude]
     public bool IsClosed { get; set; } = false;
     [JsonIgnore] 
@@ -44,7 +45,7 @@ public partial class Box
         public string ProductId { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
         public string ProductSku { get; set; } = string.Empty;
-
+        public string ExpectedVsConfirmed => $"{Quantity} szt.";
         [ObservableProperty]
         private int _quantity = 1;
 

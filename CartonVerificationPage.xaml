@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MagazynApp.CartonVerificationPage"
+             BackgroundColor="#121212">
+    <Grid RowDefinitions="Auto, Auto, *, Auto" Padding="20">
+        
+        <Entry Grid.Row="0" 
+               Placeholder="Skanuj kod kartonu..." 
+               Text="{Binding ScanInput}" 
+               ReturnCommand="{Binding ProcessScanCommand}" 
+               BackgroundColor="#2D2D2D" TextColor="White"/>
+
+        <CollectionView Grid.Row="2" ItemsSource="{Binding CurrentItems}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
+                        <Label Grid.Column="0" Text="{Binding ProductName}" TextColor="White" VerticalOptions="Center"/>
+                        <Label Grid.Column="1" Text="{Binding ExpectedVsConfirmed}" Margin="0,0,20,0" TextColor="Gray" VerticalOptions="Center"/>
+                        <Button Grid.Column="2" Text="Błąd" BackgroundColor="Red" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Button Grid.Row="3" Text="ZATWIERDŹ STAN" 
+                Command="{Binding SaveAndCloseCommand}"
+                BackgroundColor="#00C853" TextColor="White" />
+    </Grid>
+</ContentPage>
