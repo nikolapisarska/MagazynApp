@@ -58,4 +58,11 @@ public class StorageService : IStorageService
         var allClosed = await _db!.Table<Box>().Where(b => b.IsClosed).ToListAsync();
         return allClosed.Where(b => b.Items.Any(i => i.ProductId == productCode)).ToList();
     }
+
+    public async Task<List<Box>> GetAllBoxesAsync()
+    {
+        await EnsureInitializedAsync();
+
+        return await _db!.Table<Box>().ToListAsync();
+    }
 }

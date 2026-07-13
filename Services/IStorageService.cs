@@ -9,4 +9,5 @@ public interface IStorageService
     Task SaveBoxAsync(Box box);
     Task<Box?> GetBoxByCodeAsync(string boxCode);
     Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode);
+    Task<List<Box>> GetAllBoxesAsync();
 }

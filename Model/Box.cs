@@ -22,17 +22,25 @@ public class Box
     [PrimaryKey]
     public string BoxCode { get; set; } = string.Empty;
     public bool IsClosed { get; set; }
-    
-    [Ignore]
+
+    [Ignore] // SQLite ignoruje to pole
     public List<Item> Items { get; set; } = new();
 
-    public string ItemsJson 
-    { 
-        get => JsonSerializer.Serialize(Items);
-        set => Items = JsonSerializer.Deserialize<List<Item>>(value) ?? new List<Item>();
+    // To pole jest widziane przez bazę jako tekst, ale nie używamy automatycznego gettera/settera
+    public string ItemsJson { get; set; } = "[]"; 
+
+    public void LoadAfterRead() 
+    {
+        // Ręczna deserializacja po pobraniu z bazy
+        if (!string.IsNullOrEmpty(ItemsJson))
+        {
+            Items = JsonSerializer.Deserialize<List<Item>>(ItemsJson) ?? new List<Item>();
+        }
     }
 
-    // Metody wymagane przez Twój ViewModel
-    public void LoadAfterRead() { /* Dodatkowa logika po odczycie, jeśli potrzebna */ }
-    public void PrepareForSave() { /* Dodatkowa logika przed zapisem, jeśli potrzebna */ }
+    public void PrepareForSave() 
+    {
+        // Ręczna serializacja przed zapisem do bazy
+        ItemsJson = JsonSerializer.Serialize(Items);
+    }
 }

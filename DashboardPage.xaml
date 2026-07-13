@@ -13,10 +13,6 @@
         <Grid Grid.Row="0" HeightRequest="60" >
             <Label Text="Panel Magazynowy" TextColor="White" FontSize="30" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
-
-        
-        
-        
         <VerticalStackLayout Spacing="15" Margin="0,50,0,20">
             <Button Text="ROZPOCZNIJ KOMPLETACJĘ" 
                     Clicked="OnStartPickingClicked" 
@@ -40,5 +36,6 @@
                     Command="{Binding ImportDataCommand}"
                     BackgroundColor="Gray" />
         </VerticalStackLayout>
+        
     </VerticalStackLayout>
 </ContentPage>
