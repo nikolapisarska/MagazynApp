@@ -65,4 +65,24 @@ public class StorageService : IStorageService
 
         return await _db!.Table<Box>().ToListAsync();
     }
+
+    public async Task<List<Product>> GetProductsAsync()
+    {
+        await EnsureInitializedAsync();
+        return await _db!.Table<Product>().ToListAsync();
+    }
+
+    public async Task<List<Box>> GetBoxesAsync()
+    {
+        await EnsureInitializedAsync();
+        return await _db!.Table<Box>().ToListAsync();
+    }
+
+    public async Task ExportDataToFile(string fileName, string content)
+    {
+        string path = Path.Combine(FileSystem.AppDataDirectory, fileName);
+        await File.WriteAllTextAsync(path, content);
+        // Opcjonalnie: poinformuj użytkownika
+        await Shell.Current.DisplayAlert("Sukces", $"Plik zapisano w: {path}", "OK");
+    }
 }

@@ -10,4 +10,7 @@ public interface IStorageService
     Task<Box?> GetBoxByCodeAsync(string boxCode);
     Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode);
     Task<List<Box>> GetAllBoxesAsync();
+    Task<List<Product>> GetProductsAsync();
+    Task<List<Box>> GetBoxesAsync();
+    Task ExportDataToFile(string fileName, string content);
 }

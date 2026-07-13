@@ -31,21 +31,34 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            // 1. Pobierz wszystkie dane z bazy
-            // Musisz dodać metodę GetAllBoxesAsync() do swojego IStorageService
-            var allBoxes = await _storageService.GetAllBoxesAsync(); 
-        
-            string json = System.Text.Json.JsonSerializer.Serialize(allBoxes);
-            string fileName = "MagazynEksport.json";
+            // 1. Wybór użytkownika za pomocą ActionSheet
+            string action = await Shell.Current.DisplayActionSheet(
+                "Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
+
+            if (action == "Anuluj") return;
+
+            // 2. Pobranie odpowiednich danych
+            string json = string.Empty;
+            if (action == "Produkty")
+            {
+                var products = await _storageService.GetProductsAsync();
+                json = System.Text.Json.JsonSerializer.Serialize(products);
+            }
+            else // Kartony
+            {
+                var boxes = await _storageService.GetBoxesAsync();
+                json = System.Text.Json.JsonSerializer.Serialize(boxes);
+            }
+
+            // 3. Zapis i udostępnienie
+            string fileName = $"{action}_{DateTime.Now:yyyyMMddHHmm}.json";
             string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
         
-            // 2. Zapisz do pliku tymczasowego
             await File.WriteAllTextAsync(filePath, json);
         
-            // 3. Udostępnij plik użytkownikowi (systemowe okno zapisu)
             await Share.Default.RequestAsync(new ShareFileRequest
             {
-                Title = "Eksport danych",
+                Title = $"Eksport: {action}",
                 File = new ShareFile(filePath)
             });
         }
