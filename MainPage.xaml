@@ -140,6 +140,7 @@
                 </Border>
 
                 <Button Text="ZAMKNIJ I ZAPISZ KARTON" Clicked="OnSaveAndCloseClicked" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" FontSize="16" CornerRadius="8" HeightRequest="60" Margin="0,10,0,20"/>
+              
             </VerticalStackLayout>
         </ScrollView>
     </Grid>
