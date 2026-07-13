@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using MagazynApp.Model;
 using MagazynApp.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -67,12 +68,36 @@ public partial class MainViewModel : ObservableObject
             await Shell.Current.DisplayAlert("Błąd", $"Nie udało się wyeksportować: {ex.Message}", "OK");
         }
     }
-
     [RelayCommand]
     private async Task ImportDataAsync()
     {
-        // Tutaj dodaj logikę importu (np. FilePicker)
-        await Shell.Current.DisplayAlert("Info", "Funkcja importu została wywołana", "OK");
+        try
+        {
+            string action = await Shell.Current.DisplayActionSheet("Co importujesz?", "Anuluj", null, "Produkty", "Kartony");
+            if (action == "Anuluj") return;
+
+            var result = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Wybierz plik JSON" });
+            if (result == null) return;
+
+            string jsonContent = await File.ReadAllTextAsync(result.FullPath);
+
+            if (action == "Produkty")
+            {
+                var products = JsonSerializer.Deserialize<List<Product>>(jsonContent);
+                if (products != null) await _storageService.SaveProductsAsync(products);
+                await Shell.Current.DisplayAlert("Sukces", "Produkty zaimportowane.", "OK");
+            }
+            else
+            {
+                var boxes = JsonSerializer.Deserialize<List<Box>>(jsonContent);
+                if (boxes != null) await _storageService.SaveBoxesAsync(boxes);
+                await Shell.Current.DisplayAlert("Sukces", "Kartony zaimportowane.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Błąd", ex.Message, "OK");
+        }
     }
 
 

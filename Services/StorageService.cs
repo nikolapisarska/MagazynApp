@@ -85,4 +85,26 @@ public class StorageService : IStorageService
         // Opcjonalnie: poinformuj użytkownika
         await Shell.Current.DisplayAlert("Sukces", $"Plik zapisano w: {path}", "OK");
     }
+    public async Task SaveProductsAsync(List<Product> products)
+    {
+        await EnsureInitializedAsync();
+        foreach (var product in products)
+        {
+            // Jeśli Id jest 0, SQLite nada nowe Id automatycznie (dzięki AutoIncrement)
+            if (product.Id == 0)
+                await _db!.InsertAsync(product);
+            else
+                await _db!.InsertOrReplaceAsync(product);
+        }
+    }
+
+    public async Task SaveBoxesAsync(List<Box> boxes)
+    {
+        await EnsureInitializedAsync();
+        foreach (var box in boxes)
+        {
+            box.PrepareForSave(); // Serializuje listę Items do ItemsJson
+            await _db!.InsertOrReplaceAsync(box);
+        }
+    }
 }

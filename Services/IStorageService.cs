@@ -13,4 +13,8 @@ public interface IStorageService
     Task<List<Product>> GetProductsAsync();
     Task<List<Box>> GetBoxesAsync();
     Task ExportDataToFile(string fileName, string content);
+    
+    // Nowe metody importu
+    Task SaveProductsAsync(List<Product> products);
+    Task SaveBoxesAsync(List<Box> boxes);
 }

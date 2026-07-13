@@ -1,15 +1,14 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using SQLite;
 
 namespace MagazynApp.Model;
 
 public class Product
 {
-    [PrimaryKey]
+    [PrimaryKey, AutoIncrement] // Ważne: AutoIncrement zapobiega nadpisywaniu
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string CodeOrIdGraffiti { get; set; } = string.Empty;
 
-    [NotMapped] 
+    [Ignore] // Nie mapujemy tego do bazy
     public int Lp { get; set; } 
 }
