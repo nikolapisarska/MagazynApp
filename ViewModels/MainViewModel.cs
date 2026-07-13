@@ -177,41 +177,41 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportDataAsync()
     {
-        try
-        {
-            // 1. Przygotuj dane
-            var products = await _storageService.GetAllProductsAsync();
-            var boxes = await _storageService.GetAllBoxesAsync();
-            var data = new { Products = products, Boxes = boxes };
-            string json = JsonSerializer.Serialize(data);
-            byte[] fileBytes = System.Text.Encoding.UTF8.GetBytes(json);
+        // Wywołanie menu wyboru
+        string action = await Shell.Current.DisplayActionSheet("Wybierz:", "Anuluj", null, "Produkty", "Kartony");
 
-            // 2. Wywołaj zapis w oknie systemowym
-            // Używamy Dispatchera, aby okno otworzyło się płynnie w wątku UI
-            await Application.Current.Dispatcher.DispatchAsync(async () =>
-            {
-                using var stream = new MemoryStream(fileBytes);
-            
-                // To wywołuje okno zapisu "Zapisz jako..."
-                var result = await CommunityToolkit.Maui.Storage.FileSaver.Default.SaveAsync("magazyn_backup.json", stream);
-            
-                if (result.IsSuccessful)
-                {
-                    StatusMessage = "Zapisano w: " + result.FilePath;
-                }
-                else
-                {
-                    StatusMessage = "Zapis anulowany.";
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = "Błąd: " + ex.Message;
-            System.Diagnostics.Debug.WriteLine(ex.ToString());
-        }
+        if (action == "Anuluj") return;
+
+        object dataToExport = null;
+        string fileName = (action == "Produkty") ? "produkty.json" : "kartony.json";
+
+        // Pobranie odpowiednich danych
+        if (action == "Produkty")
+            dataToExport = await _storageService.GetAllProductsAsync();
+        else if (action == "Kartony")
+            dataToExport = await _storageService.GetAllBoxesAsync();
+
+        // Zapis pliku
+        string json = JsonSerializer.Serialize(dataToExport, new JsonSerializerOptions { WriteIndented = true });
+        byte[] fileBytes = System.Text.Encoding.UTF8.GetBytes(json);
+    
+        using var stream = new MemoryStream(fileBytes);
+        var result = await CommunityToolkit.Maui.Storage.FileSaver.Default.SaveAsync(fileName, stream);
+
+        if (result.IsSuccessful)
+            StatusMessage = "Zapisano: " + result.FilePath;
+        else
+            StatusMessage = "Zapis anulowany.";
+    }
+    public async Task<List<Product>> GetAllProductsFromService()
+    {
+        return await _storageService.GetAllProductsAsync();
     }
 
+    public async Task<List<Box>> GetAllBoxesFromService()
+    {
+        return await _storageService.GetAllBoxesAsync();
+    }
     [RelayCommand]
     private async Task ImportDataAsync()
     {System.Diagnostics.Debug.WriteLine("Przycisk EXPORT został kliknięty!");
