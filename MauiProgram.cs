@@ -1,4 +1,5 @@
-﻿using MagazynApp.Services;
+﻿using CommunityToolkit.Maui;
+using MagazynApp.Services;
 using MagazynApp.ViewModels;
 using Microsoft.Extensions.Logging;
 
@@ -11,6 +12,7 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+			.UseMauiCommunityToolkit()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
