@@ -19,7 +19,7 @@
                     BackgroundColor="#fcc821" 
                     TextColor="Black" 
                     FontAttributes="Bold" 
-                    HeightRequest="60"/><Label Text="Wybierz nowe zamówienie" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
+                    HeightRequest="60"/><Label Text="Skompletuj nowy karton" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
 
             <Button Text="WERYFIKUJ KARTON" 
                     Clicked="OnVerifyCartonClicked"
