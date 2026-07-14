@@ -7,141 +7,61 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
 
-    <Grid RowDefinitions="Auto, Auto, *" RowSpacing="10">
+    <Grid RowDefinitions="Auto, Auto, *">
         
+        <!-- Header -->
         <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
             <Label Text="Panel Magazynowy" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
 
-        <Border Grid.Row="1" StrokeShape="RoundRectangle 8" Margin="15,5,15,0" Padding="10" BackgroundColor="#2D2D2D" StrokeThickness="0">
+        <!-- Skaner -->
+        <Border Grid.Row="1" StrokeShape="RoundRectangle 8" Margin="15,10,15,0" Padding="15" BackgroundColor="#2D2D2D" StrokeThickness="0">
             <VerticalStackLayout Spacing="8">
-                <Label Text="Status: Aktywny" TextColor="#81C784" FontAttributes="Bold" FontSize="14"/>
-                <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#BDBDBD"/>
-                
+                <Label Text="Status: Aktywny" TextColor="#81C784" FontAttributes="Bold"/>
                 <Entry x:Name="ScanEntry"
                        Text="{Binding ScanInput}"
                        Placeholder="Zeskanuj kod..."
-                       PlaceholderColor="Gray"
                        TextColor="White" 
                        BackgroundColor="#424242"
-                       ReturnType="Search"
                        Completed="OnScanEntryCompleted" />
+            </VerticalStackLayout>
+        </Border>
 
-                <CollectionView ItemsSource="{Binding FoundClosedBoxes}">
+        <!-- Lista -->
+        <ScrollView Grid.Row="2" Padding="15">
+            <VerticalStackLayout Spacing="15" WidthRequest="{OnIdiom Desktop=600, Phone=-1}" HorizontalOptions="Center">
+                
+                <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="24" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+
+                <!-- Nagłówek Tabeli -->
+                <Grid ColumnDefinitions="40,120,*,80" BackgroundColor="#fcc821" HeightRequest="40">
+                    <Label Grid.Column="0" Text="LP" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+                    <Label Grid.Column="1" Text="INDEX" FontAttributes="Bold" VerticalOptions="Center" Margin="10,0"/>
+                    <Label Grid.Column="2" Text="NAZWA" FontAttributes="Bold" VerticalOptions="Center" Margin="10,0"/>
+                    <Label Grid.Column="3" Text="ILOŚĆ" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+                </Grid>
+
+                <CollectionView ItemsSource="{Binding CurrentItems}" HeightRequest="400" BackgroundColor="#2B2B2B">
                     <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Frame Margin="5" Padding="10" BackgroundColor="#2D2D2D">
-                                <HorizontalStackLayout Spacing="10">
-                                    <Label Text="Karton:" FontAttributes="Bold" TextColor="White"/>
-                                    <Label Text="{Binding BoxCode}" TextColor="Yellow"/>
-                                    <Label Text="(Zamknięty)" TextColor="Green"/>
-                                </HorizontalStackLayout>
-                            </Frame>
+                        <DataTemplate x:DataType="model:Item">
+                            <Grid ColumnDefinitions="40,120,*,80" HeightRequest="50" BackgroundColor="#2B2B2B">
+                                <!-- Trigger zamiast Convertera - nie wywali apki -->
+                                <Grid.Triggers>
+                                    <DataTrigger TargetType="Grid" Binding="{Binding IsEven}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="#363636"/>
+                                    </DataTrigger>
+                                </Grid.Triggers>
+                                
+                                <Label Grid.Column="0" Text="{Binding Lp}" VerticalOptions="Center" HorizontalOptions="Center" TextColor="White"/>
+                                <Label Grid.Column="1" Text="{Binding ProductSku}" VerticalOptions="Center" Margin="10,0" TextColor="White"/>
+                                <Label Grid.Column="2" Text="{Binding ProductName}" VerticalOptions="Center" Margin="10,0" TextColor="White"/>
+                                <Entry Grid.Column="3" Text="{Binding Quantity}" Keyboard="Numeric" VerticalOptions="Center" HorizontalOptions="Center" BackgroundColor="Transparent" TextColor="White"/>
+                            </Grid>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Frame Margin="5" Padding="10" BackgroundColor="#333333" IsVisible="{Binding IsProductVisible}">
-                    <VerticalStackLayout>
-                        <Label Text="Znaleziony produkt:" FontSize="10" TextColor="Gray"/>
-                        <Label Text="{Binding FoundProduct.Name}" FontAttributes="Bold" TextColor="White"/>
-                        <Label Text="{Binding FoundProduct.CodeOrIdGraffiti, StringFormat='Kod: {0}'}" TextColor="#fcc821"/>
-                    </VerticalStackLayout>
-                </Frame>
-
-                <Label Text="{Binding StatusMessage}" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#81C784" Margin="0,5,0,0"/>
-            </VerticalStackLayout>
-        </Border>
-
-        <ScrollView Grid.Row="2" Padding="15,0,15,15" WidthRequest="{OnIdiom Desktop=600, Phone=-1}" HorizontalOptions="Center">
-            <VerticalStackLayout Spacing="15" IsVisible="{Binding IsBoxOpen}">
-                
-                <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="24" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
-
-                <Border StrokeShape="RoundRectangle 8" Padding="10" BackgroundColor="#2D2D2D" StrokeThickness="0">
-                    <VerticalStackLayout Spacing="10">
-                        <Label Text="Wymiary i waga (opcjonalne):" FontAttributes="Bold" FontSize="14" TextColor="#fcc821"/>
-                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
-                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Spacing="2">
-                                <Label Text="Waga (kg)" FontSize="12" TextColor="#BDBDBD"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Weight, Mode=TwoWay}" Placeholder="0.00" TextColor="White" BackgroundColor="#424242"/>
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="2">
-                                <Label Text="Dł. (cm)" FontSize="12" TextColor="#BDBDBD"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Length, Mode=TwoWay}" TextColor="White" BackgroundColor="#424242"/>
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="2">
-                                <Label Text="Szer. (cm)" FontSize="12" TextColor="#BDBDBD"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Width, Mode=TwoWay}" TextColor="White" BackgroundColor="#424242"/>
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Row="1" Grid.Column="2" Spacing="2">
-                                <Label Text="Wys. (cm)" FontSize="12" TextColor="#BDBDBD"/>
-                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Height, Mode=TwoWay}" TextColor="White" BackgroundColor="#424242"/>
-                            </VerticalStackLayout>
-                        </Grid>
-                    </VerticalStackLayout>
-                </Border>
-
-                <Label Text="Zawartość:" FontAttributes="Bold" FontSize="14" Margin="0,5,0,-5" TextColor="#BDBDBD"/>
-
-                <Border StrokeThickness="0" BackgroundColor="#2B2B2B" StrokeShape="RoundRectangle 5">
-                    <VerticalStackLayout Spacing="0">
-                        <Grid ColumnDefinitions="40,120,*,80" HeightRequest="42" BackgroundColor="#fcc821">
-                            <Label Grid.Column="0" Text="LP" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="1" Text="INDEX" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="2" Text="NAZWA TOWARU" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="3" Text="ILOŚĆ" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                        </Grid>
-
-                        <CollectionView ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton.">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="model:Item">
-                                    <Grid RowDefinitions="45,1" RowSpacing="0">
-                                        <Grid Grid.Row="0" ColumnDefinitions="40,120,*,80" BackgroundColor="#2B2B2B">
-                                            <Grid.Triggers>
-                                                <DataTrigger TargetType="Grid" Binding="{Binding IsEven}" Value="True">
-                                                    <Setter Property="BackgroundColor" Value="#363636"/>
-                                                </DataTrigger>
-                                            </Grid.Triggers>
-
-                                            <Label Grid.Column="0" Text="{Binding Lp}" TextColor="White" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                                            <Label Grid.Column="1" Text="{Binding ProductSku}" Margin="10,0" VerticalTextAlignment="Center" TextColor="White"/>
-                                            <Label Grid.Column="2" Text="{Binding ProductName}" Margin="10,0" VerticalTextAlignment="Center" LineBreakMode="TailTruncation" TextColor="White"/>
-
-                                            <Grid Grid.Column="3" ColumnDefinitions="*, 30" VerticalOptions="Center">
-                                                <Entry Text="{Binding Quantity, Mode=TwoWay}" 
-                                                       Keyboard="Numeric"
-                                                       TextColor="White"
-                                                       HorizontalTextAlignment="Center"
-                                                       VerticalTextAlignment="Center"
-                                                       BackgroundColor="Transparent"
-                                                       HeightRequest="40"
-                                                       Margin="0,0,5,0"/> 
-                                                <Button Grid.Column="1" 
-                                                        Text="X" 
-                                                        TextColor="Red"
-                                                        BackgroundColor="Transparent"
-                                                        FontSize="14"
-                                                        FontAttributes="Bold"
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=RemoveItemCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        VerticalOptions="Center"
-                                                        HorizontalOptions="Center"
-                                                        Padding="0"
-                                                        WidthRequest="30"
-                                                        HeightRequest="30"/>
-                                            </Grid>
-                                        </Grid>
-                                        <BoxView Grid.Row="1" HeightRequest="1" Color="#444"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </VerticalStackLayout>
-                </Border>
-
-                <Button Text="ZAMKNIJ I ZAPISZ KARTON" Clicked="OnSaveAndCloseClicked" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" FontSize="16" CornerRadius="8" HeightRequest="60" Margin="0,10,0,20"/>
-              
+                <Button Text="ZAMKNIJ I ZAPISZ" Clicked="OnSaveAndCloseClicked" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50" Margin="0,10,0,30"/>
             </VerticalStackLayout>
         </ScrollView>
     </Grid>
