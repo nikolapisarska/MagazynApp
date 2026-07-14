@@ -121,6 +121,7 @@ public partial class MainViewModel : ObservableObject
                     CurrentItems.Add(newItem);
                     CurrentBox.Items.Add(newItem);
                     UpdateListIndices();
+                    OnPropertyChanged(nameof(CurrentItems));
                 }
                 await SaveCurrentBoxInternal();
                 StatusMessage = $"Dodano: {product.Name}";

@@ -25,6 +25,7 @@ public class StorageService : IStorageService
             }
         }
         finally { _semaphore.Release(); }
+        System.Diagnostics.Debug.WriteLine($"Ścieżka do bazy: {_dbPath}");
     }
 
     public async Task<Product?> GetProductByCodeAsync(string code) 
