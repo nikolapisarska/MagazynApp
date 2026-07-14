@@ -13,10 +13,21 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
-    
-    [ObservableProperty] 
-    [NotifyPropertyChangedFor(nameof(IsBoxOpen))]
+    [ObservableProperty] private Product? _foundProduct;
+
+    // Pełna właściwość z powiadomieniem dla UI (IsVisible)
     private Box? _currentBox;
+    public Box? CurrentBox 
+    {
+        get => _currentBox;
+        set 
+        {
+            if (SetProperty(ref _currentBox, value))
+            {
+                OnPropertyChanged(nameof(IsBoxOpen));
+            }
+        }
+    }
 
     public bool IsBoxOpen => CurrentBox != null;
 
@@ -27,47 +38,31 @@ public partial class MainViewModel : ObservableObject
     {
         _storageService = storageService;
     }
+
     [RelayCommand]
     private async Task ExportDataAsync()
     {
         try
         {
-            // 1. Wybór użytkownika za pomocą ActionSheet
-            string action = await Shell.Current.DisplayActionSheet(
-                "Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
-
+            string action = await Shell.Current.DisplayActionSheet("Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
             if (action == "Anuluj") return;
 
-            // 2. Pobranie odpowiednich danych
-            string json = string.Empty;
-            if (action == "Produkty")
-            {
-                var products = await _storageService.GetProductsAsync();
-                json = System.Text.Json.JsonSerializer.Serialize(products);
-            }
-            else // Kartony
-            {
-                var boxes = await _storageService.GetBoxesAsync();
-                json = System.Text.Json.JsonSerializer.Serialize(boxes);
-            }
+            string json = action == "Produkty" 
+                ? JsonSerializer.Serialize(await _storageService.GetProductsAsync())
+                : JsonSerializer.Serialize(await _storageService.GetBoxesAsync());
 
-            // 3. Zapis i udostępnienie
             string fileName = $"{action}_{DateTime.Now:yyyyMMddHHmm}.json";
             string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
-        
             await File.WriteAllTextAsync(filePath, json);
-        
-            await Share.Default.RequestAsync(new ShareFileRequest
-            {
-                Title = $"Eksport: {action}",
-                File = new ShareFile(filePath)
-            });
+
+            await Share.Default.RequestAsync(new ShareFileRequest { Title = $"Eksport: {action}", File = new ShareFile(filePath) });
         }
         catch (Exception ex)
         {
             await Shell.Current.DisplayAlert("Błąd", $"Nie udało się wyeksportować: {ex.Message}", "OK");
         }
     }
+
     [RelayCommand]
     private async Task ImportDataAsync()
     {
@@ -82,24 +77,17 @@ public partial class MainViewModel : ObservableObject
             string jsonContent = await File.ReadAllTextAsync(result.FullPath);
 
             if (action == "Produkty")
-            {
-                var products = JsonSerializer.Deserialize<List<Product>>(jsonContent);
-                if (products != null) await _storageService.SaveProductsAsync(products);
-                await Shell.Current.DisplayAlert("Sukces", "Produkty zaimportowane.", "OK");
-            }
+                await _storageService.SaveProductsAsync(JsonSerializer.Deserialize<List<Product>>(jsonContent) ?? new());
             else
-            {
-                var boxes = JsonSerializer.Deserialize<List<Box>>(jsonContent);
-                if (boxes != null) await _storageService.SaveBoxesAsync(boxes);
-                await Shell.Current.DisplayAlert("Sukces", "Kartony zaimportowane.", "OK");
-            }
+                await _storageService.SaveBoxesAsync(JsonSerializer.Deserialize<List<Box>>(jsonContent) ?? new());
+
+            await Shell.Current.DisplayAlert("Sukces", "Dane zaimportowane.", "OK");
         }
         catch (Exception ex)
         {
             await Shell.Current.DisplayAlert("Błąd", ex.Message, "OK");
         }
     }
-
 
     [RelayCommand]
     private async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
@@ -116,8 +104,6 @@ public partial class MainViewModel : ObservableObject
         await SaveCurrentBoxInternal();
     }
 
-    [ObservableProperty] private Product? _foundProduct;
-
     public async Task ExecuteProcessScanAsync()
     {
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
@@ -128,7 +114,6 @@ public partial class MainViewModel : ObservableObject
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
-            FoundProduct = product;
             if (CurrentBox != null)
             {
                 var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
@@ -178,35 +163,38 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    public async Task SaveAndCloseBoxAsync()
+    {
+        if (CurrentBox == null) return;
+        CurrentBox.IsClosed = true;
+        await SaveCurrentBoxInternal();
+        StatusMessage = $"Karton {CurrentBox.BoxCode} zamknięty.";
+        CurrentBox = null; // To automatycznie ukryje przycisk w UI
+        CurrentItems.Clear();
+    }
+
     private void UpdateListIndices()
     {
-        for (int i = 0; i < CurrentItems.Count; i++) { CurrentItems[i].Lp = i + 1; CurrentItems[i].IsEven = (i + 1) % 2 == 0; }
+        for (int i = 0; i < CurrentItems.Count; i++) 
+        { 
+            CurrentItems[i].Lp = i + 1; 
+            CurrentItems[i].IsEven = (i + 1) % 2 == 0; 
+        }
     }
 
     private async Task SaveCurrentBoxInternal()
     {
-        if (CurrentBox != null) { CurrentBox.Items = CurrentItems.ToList(); CurrentBox.PrepareForSave(); await _storageService.SaveBoxAsync(CurrentBox); }
+        if (CurrentBox != null) 
+        { 
+            CurrentBox.Items = CurrentItems.ToList(); 
+            CurrentBox.PrepareForSave(); 
+            await _storageService.SaveBoxAsync(CurrentBox); 
+        }
     }
 
-    public async Task SaveAndCloseBoxAsync()
-    {
-        if (CurrentBox == null) return;
-        CurrentBox.IsClosed = true; 
-        await SaveCurrentBoxInternal();
-        StatusMessage = $"Karton {CurrentBox.BoxCode} zamknięty.";
-        CurrentBox = null;
-        CurrentItems.Clear();
-    }
     public async Task InitializeLocalDatabaseAsync()
     {
-        try 
-        { 
-            System.Diagnostics.Debug.WriteLine("Baza danych została zainicjalizowana.");
-        }
-        catch (Exception ex) 
-        { 
-            System.Diagnostics.Debug.WriteLine(ex.Message); 
-        }
+        // Logika inicjalizacji (opcjonalnie wywołana w konstruktorze lub przy starcie)
+        System.Diagnostics.Debug.WriteLine("Baza danych gotowa.");
     }
-    
 }

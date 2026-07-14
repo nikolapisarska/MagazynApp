@@ -22,7 +22,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IStorageService, StorageService>();
         builder.Services.AddTransient<MainViewModel>();
         builder.Services.AddTransient<CartonVerificationPage>();
-        builder.Services.AddTransient<VerificationViewModel>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
