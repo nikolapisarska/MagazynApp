@@ -1,21 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace MagazynApp;
 
 public partial class CartonVerificationPage : ContentPage
 {
-    public CartonVerificationPage(VerificationViewModel viewModel)
+    public CartonVerificationPage(ViewModels.VerificationViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = viewModel; // To "spina" XAML z logiką
+        BindingContext = viewModel;
     }
-    private async void OnBackButtonClicked(object sender, EventArgs e)
+
+    // Auto-fokus na pole skanowania po załadowaniu strony
+    protected override void OnAppearing()
     {
-        await Navigation.PopAsync();
+        base.OnAppearing();
+        ScanSearchBar.Focus();
     }
-    
 }

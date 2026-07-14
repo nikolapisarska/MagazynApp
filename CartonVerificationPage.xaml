@@ -2,53 +2,38 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:MagazynApp.ViewModels"
-             xmlns:model="clr-namespace:MagazynApp.Model"
              x:Class="MagazynApp.CartonVerificationPage"
-             Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
 
-    <Grid RowDefinitions="Auto, Auto, *" RowSpacing="10">
-        
-        <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
-            <Label Text="Panel Magazynowy" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
-        </Grid>
-            <Grid Grid.Row="0" HeightRequest="60" ColumnDefinitions="Auto, *">
-                <Button Grid.Column="0"
-                        Text="&#x2190;" 
-                        FontAttributes="Bold"
-                        FontSize="30"
-                        TextColor="#2D2D2D" 
-                        BackgroundColor="Transparent"
-                        Clicked="OnBackButtonClicked" 
-                        VerticalOptions="Center"/>
-                
-        </Grid>
-
-        <VerticalStackLayout Grid.Row="1" Spacing="8" Margin="0,10,0,10">
-            <Label Text="Status: Aktywny" TextColor="#81C784" FontAttributes="Bold" FontSize="14"/>
-            <Label Text="Zeskanuj kod produktu:" FontAttributes="Bold" FontSize="13" TextColor="#BDBDBD"/>
-            
-            <SearchBar x:Name="ScanSearchBar"
-                       Text="{Binding ScanInput}"
-                       SearchCommand="{Binding ProcessScanCommand}"
-                       Placeholder="Zeskanuj kod..."
-                       PlaceholderColor="Gray"
-                       TextColor="White" 
-                       BackgroundColor="#424242" />
-
-            <Label Text="{Binding StatusMessage}" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#81C784"/>
+    <Grid Padding="20" RowDefinitions="Auto, Auto, *, Auto" RowSpacing="15">
+        <VerticalStackLayout Grid.Row="0">
+            <Label Text="Weryfikacja Kartonu" TextColor="White" FontSize="24" FontAttributes="Bold"/>
+            <ProgressBar Progress="{Binding ProgressValue}" ProgressColor="#4CAF50" HeightRequest="8" Margin="0,10,0,0"/>
         </VerticalStackLayout>
+        
+        <Entry x:Name="ScanSearchBar" Grid.Row="1" Text="{Binding ScanInput}" Placeholder="Skanuj kod..." 
+               ReturnCommand="{Binding ProcessScanCommand}" BackgroundColor="#1E1E1E" HeightRequest="50" TextColor="White"/>
 
         <CollectionView Grid.Row="2" ItemsSource="{Binding CurrentItems}">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Padding="10" ColumnDefinitions="*, Auto, Auto">
-                        <Label Grid.Column="0" Text="{Binding ProductName}" TextColor="White" VerticalOptions="Center"/>
-                        <Label Grid.Column="1" Text="{Binding ExpectedVsConfirmed}" Margin="0,0,20,0" TextColor="Gray" VerticalOptions="Center"/>
-                        <Button Grid.Column="2" Text="Błąd" BackgroundColor="Red" />
-                    </Grid>
+                    <Border StrokeShape="RoundRectangle 10" BackgroundColor="#1E1E1E" Margin="0,5" Padding="15">
+                        <Grid ColumnDefinitions="*, Auto, Auto">
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="{Binding ProductName}" FontAttributes="Bold" TextColor="White"/>
+                                <Label Text="{Binding StatusLabel}" TextColor="{Binding StatusColor}" FontSize="12"/>
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding ExpectedVsConfirmed}" FontSize="18" VerticalOptions="Center" Margin="0,0,15,0"/>
+                            <HorizontalStackLayout Grid.Column="2" Spacing="5">
+                                <Button Text="Brak" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=ReportMissingCommand}" CommandParameter="{Binding .}" BackgroundColor="#FBC02D"/>
+                                <Button Text="Uszk" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=RemoveDamagedCommand}" CommandParameter="{Binding .}" BackgroundColor="#D32F2F"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+
+        <Button Grid.Row="3" Text="ZAMKNIJ KARTON" Command="{Binding SaveAndCloseCommand}" BackgroundColor="#2196F3" HeightRequest="50"/>
     </Grid>
 </ContentPage>
