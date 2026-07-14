@@ -10,11 +10,14 @@ public class Item
     public string ProductName { get; set; }
     public int Quantity { get; set; }
     
+    public int ConfirmedQuantity { get; set; }
     // Pola pomocnicze dla UI (nie muszą być w bazie)
     [Ignore]
     public int Lp { get; set; }
     [Ignore]
     public bool IsEven { get; set; }
+    [Ignore]
+    public string ExpectedVsConfirmed => $"{ConfirmedQuantity} / {Quantity}";
 }
 
 public class Box
@@ -23,7 +26,7 @@ public class Box
     public string BoxCode { get; set; } = string.Empty;
     public bool IsClosed { get; set; }
 
-    [Ignore] // SQLite ignoruje to pole
+    [Ignore] 
     public List<Item> Items { get; set; } = new();
 
     // To pole jest widziane przez bazę jako tekst, ale nie używamy automatycznego gettera/settera
@@ -43,4 +46,8 @@ public class Box
         // Ręczna serializacja przed zapisem do bazy
         ItemsJson = JsonSerializer.Serialize(Items);
     }
+    public double Weight { get; set; }
+    public double Length { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
 }

@@ -8,9 +8,10 @@ namespace MagazynApp;
 
 public partial class CartonVerificationPage : ContentPage
 {
-    public CartonVerificationPage()
+    public CartonVerificationPage(VerificationViewModel viewModel)
     {
         InitializeComponent();
+        BindingContext = viewModel; // To "spina" XAML z logiką
     }
     private async void OnBackButtonClicked(object sender, EventArgs e)
     {

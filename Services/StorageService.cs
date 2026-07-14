@@ -49,7 +49,9 @@ public class StorageService : IStorageService
     public async Task<Box?> GetBoxByCodeAsync(string boxCode) 
     {
         await EnsureInitializedAsync();
-        return await _db!.Table<Box>().FirstOrDefaultAsync(b => b.BoxCode == boxCode);
+        var box = await _db!.Table<Box>().FirstOrDefaultAsync(b => b.BoxCode == boxCode);
+        if (box != null) box.LoadAfterRead(); 
+        return box;
     }
 
     public async Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode)
