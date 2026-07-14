@@ -2,8 +2,7 @@
 
 namespace MagazynApp;
 
-
-public partial class MainPage 
+public partial class MainPage : ContentPage // Upewnij się, że dziedziczysz po ContentPage
 {
     public MainPage(MainViewModel viewModel)
     {
@@ -20,11 +19,12 @@ public partial class MainPage
             await vm.InitializeLocalDatabaseAsync();
         }
         
-        ScanSearchBar.Focus();
+        // Zaktualizowano nazwę na ScanEntry
+        ScanEntry.Focus();
     }
 
-    // Obsługa dla SearchBar (zdarzenie SearchButtonPressed wyzwalane przez Enter)
-    private void OnScanSearchBarPressed(object sender, EventArgs e)
+    // Obsługa zdarzenia Completed dla Entry
+    private void OnScanEntryCompleted(object sender, EventArgs e)
     {
         if (BindingContext is MainViewModel vm)
         {
@@ -32,12 +32,12 @@ public partial class MainPage
             {
                 vm.ProcessScanCommand.Execute(null);
             }
-        
-            // Czyścimy SearchBar
-            ScanSearchBar.Text = string.Empty; 
-        
-            // Wymuszamy fokus
-            ScanSearchBar.Focus();
+    
+            if (sender is Entry entry)
+            {
+                entry.Text = string.Empty;
+                entry.Focus(); 
+            }
         }
     }
 
@@ -46,8 +46,9 @@ public partial class MainPage
         if (BindingContext is MainViewModel vm)
         {
             await vm.SaveAndCloseBoxAsync();
-            ScanSearchBar.Focus();
+            
+            // Zaktualizowano nazwę na ScanEntry
+            ScanEntry.Focus();
         }
     }
-    
 }

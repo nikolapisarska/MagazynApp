@@ -18,13 +18,14 @@
                 <Label Text="Status: Aktywny" TextColor="#81C784" FontAttributes="Bold" FontSize="14"/>
                 <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#BDBDBD"/>
                 
-                <SearchBar x:Name="ScanSearchBar"
-                           Text="{Binding ScanInput}"
-                           SearchCommand="{Binding ProcessScanCommand}"
-                           Placeholder="Zeskanuj kod..."
-                           PlaceholderColor="Gray"
-                           TextColor="White" 
-                           BackgroundColor="#424242" />
+                <Entry x:Name="ScanEntry"
+                       Text="{Binding ScanInput}"
+                       Placeholder="Zeskanuj kod..."
+                       PlaceholderColor="Gray"
+                       TextColor="White" 
+                       BackgroundColor="#424242"
+                       ReturnType="Search"
+                       Completed="OnScanEntryCompleted" />
 
                 <CollectionView ItemsSource="{Binding FoundClosedBoxes}">
                     <CollectionView.ItemTemplate>
