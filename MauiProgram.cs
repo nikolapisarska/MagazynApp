@@ -21,7 +21,6 @@ public static class MauiProgram
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddSingleton<IStorageService, StorageService>();
         builder.Services.AddTransient<MainViewModel>();
-        builder.Services.AddTransient<CartonVerificationPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

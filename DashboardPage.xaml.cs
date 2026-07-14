@@ -15,8 +15,5 @@ public partial class DashboardPage : ContentPage
         await Shell.Current.GoToAsync(nameof(MainPage));
     }
 
-    private async void OnVerifyCartonClicked(object sender, EventArgs e)
-    {
-        await Shell.Current.GoToAsync(nameof(CartonVerificationPage));
-    }
+   
 }

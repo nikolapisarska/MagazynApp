@@ -15,7 +15,8 @@ public partial class Item : ObservableObject
     [ObservableProperty] private int _confirmedQuantity;
     [ObservableProperty] private bool _isMissing;
     [ObservableProperty] private bool _isDamaged;
-    
+    [ObservableProperty] private string _status = "OK";  // OK, Missing, Damaged
+    [ObservableProperty] private string _notes;
     // Pola dla list
     [Ignore] public int Lp { get; set; }
     [Ignore] public bool IsEven { get; set; }

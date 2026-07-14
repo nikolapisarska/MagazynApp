@@ -15,7 +15,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
     [ObservableProperty] private Product? _foundProduct;
 
-    // Pełna właściwość z powiadomieniem dla UI (IsVisible)
+    // Właściwość z powiadomieniem dla UI - zmiana otwiera/zamyka widoczność elementów
     private Box? _currentBox;
     public Box? CurrentBox 
     {
@@ -38,6 +38,8 @@ public partial class MainViewModel : ObservableObject
     {
         _storageService = storageService;
     }
+
+    #region Komendy Eksportu i Importu
 
     [RelayCommand]
     private async Task ExportDataAsync()
@@ -89,20 +91,12 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    #endregion
+
+    #region Logika Skanowania
+
     [RelayCommand]
     private async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
-
-    [RelayCommand]
-    private async Task SaveAndCloseAsync() => await SaveAndCloseBoxAsync();
-
-    [RelayCommand]
-    private async Task RemoveItem(Item item)
-    {
-        CurrentItems.Remove(item);
-        CurrentBox?.Items.Remove(item);
-        UpdateListIndices();
-        await SaveCurrentBoxInternal();
-    }
 
     public async Task ExecuteProcessScanAsync()
     {
@@ -111,11 +105,14 @@ public partial class MainViewModel : ObservableObject
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty;
 
+        // 1. Sprawdzamy, czy zeskanowany kod to PRODUKT
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
+            FoundProduct = product;
             if (CurrentBox != null)
             {
+                // Jeśli mamy otwarty karton, dodajemy produkt do listy
                 var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
                 if (existingItem != null) existingItem.Quantity += 1;
                 else
@@ -130,6 +127,7 @@ public partial class MainViewModel : ObservableObject
             }
             else
             {
+                // Jeśli nie mamy otwartego kartonu, szukamy, w których kartonach jest ten produkt
                 FoundClosedBoxes.Clear();
                 var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
                 foreach (var b in boxes) FoundClosedBoxes.Add(b);
@@ -138,11 +136,17 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        if (CurrentBox != null) { StatusMessage = "Najpierw zamknij otwarty karton!"; return; }
+        // 2. Jeśli to nie produkt, sprawdzamy czy to KARTON
+        if (CurrentBox != null) 
+        { 
+            StatusMessage = "Najpierw zamknij otwarty karton!"; 
+            return; 
+        }
 
         var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
         if (existingBox != null)
         {
+            // Otwieramy istniejący karton
             CurrentBox = existingBox;
             CurrentBox.LoadAfterRead();
             CurrentBox.IsClosed = false;
@@ -154,6 +158,7 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
+            // Tworzymy nowy karton, jeśli nie istnieje
             CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
             CurrentBox.IsClosed = false;
             await _storageService.SaveBoxAsync(CurrentBox);
@@ -163,23 +168,30 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    #endregion
+
+    #region Operacje na kartonie
+
+    [RelayCommand]
+    private async Task SaveAndCloseAsync() => await SaveAndCloseBoxAsync();
+
     public async Task SaveAndCloseBoxAsync()
     {
         if (CurrentBox == null) return;
         CurrentBox.IsClosed = true;
         await SaveCurrentBoxInternal();
         StatusMessage = $"Karton {CurrentBox.BoxCode} zamknięty.";
-        CurrentBox = null; // To automatycznie ukryje przycisk w UI
+        CurrentBox = null; 
         CurrentItems.Clear();
     }
 
-    private void UpdateListIndices()
+    [RelayCommand]
+    private async Task RemoveItem(Item item)
     {
-        for (int i = 0; i < CurrentItems.Count; i++) 
-        { 
-            CurrentItems[i].Lp = i + 1; 
-            CurrentItems[i].IsEven = (i + 1) % 2 == 0; 
-        }
+        CurrentItems.Remove(item);
+        CurrentBox?.Items.Remove(item);
+        UpdateListIndices();
+        await SaveCurrentBoxInternal();
     }
 
     private async Task SaveCurrentBoxInternal()
@@ -192,9 +204,19 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    private void UpdateListIndices()
+    {
+        for (int i = 0; i < CurrentItems.Count; i++) 
+        { 
+            CurrentItems[i].Lp = i + 1; 
+            CurrentItems[i].IsEven = (i + 1) % 2 == 0; 
+        }
+    }
+
+    #endregion
+
     public async Task InitializeLocalDatabaseAsync()
     {
-        // Logika inicjalizacji (opcjonalnie wywołana w konstruktorze lub przy starcie)
         System.Diagnostics.Debug.WriteLine("Baza danych gotowa.");
     }
 }
