@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MagazynApp.Services;
@@ -9,14 +10,18 @@ public partial class SearchViewModel : ObservableObject
 {
     private readonly IStorageService _storageService;
 
-    [ObservableProperty]
-    private string _scannedCode = string.Empty;
+    [ObservableProperty] private string _scanInput = string.Empty;
+    [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć";
 
-    [ObservableProperty]
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(IsEditable))]
     private Box? _currentBox;
 
-    [ObservableProperty]
-    private bool _isVerificationMode;
+    [ObservableProperty] private bool _isVerificationMode;
+
+    public ObservableCollection<string> RecentScans { get; } = new();
+
+    public bool IsEditable => CurrentBox != null && CurrentBox.Status != "Wysłany";
 
     public SearchViewModel(IStorageService storageService)
     {
@@ -24,72 +29,76 @@ public partial class SearchViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SearchAsync()
+    private async Task ProcessScanAsync()
     {
-        if (string.IsNullOrWhiteSpace(ScannedCode)) return;
+        if (string.IsNullOrWhiteSpace(ScanInput)) return;
 
-        // Upewnij się, że w IStorageService istnieje metoda GetBoxByCode
-        var box = await _storageService.GetBoxByCode(ScannedCode);
+        string codeToSearch = ScanInput.Trim();
+        ScanInput = string.Empty; // Czyścimy pole natychmiast
+
+        // 1. Wyszukiwanie
+        var box = await _storageService.GetBoxByCodeAsync(codeToSearch);
 
         if (box == null)
         {
-            bool createNew = await Shell.Current.DisplayAlert("Brak w bazie", 
-                "Karton nie istnieje. Czy stworzyć nowy?", "Tak", "Nie");
-            
-            if (createNew) { /* Logika tworzenia nowego kartonu */ }
+            StatusMessage = "Karton nie istnieje w bazie.";
+            await Shell.Current.DisplayAlert("Brak", "Karton nie istnieje w bazie.", "OK");
+            return;
         }
-        else
-        {
-            CurrentBox = box;
-            await Shell.Current.GoToAsync("BoxDetailsPage");
-        }
+
+        // 2. Zarządzanie historią
+        if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
+        RecentScans.Insert(0, codeToSearch);
+        while (RecentScans.Count > 5) RecentScans.RemoveAt(5);
+
+        // 3. Ustawienie danych
+        CurrentBox = box;
+        StatusMessage = $"Otwarto karton: {codeToSearch}";
+        
+        // Opcjonalna nawigacja (odkomentuj jeśli potrzebujesz)
+        // await Shell.Current.GoToAsync("BoxDetailsPage");
     }
 
     [RelayCommand]
-    private void StartVerification() 
+    private void StartVerification()
     {
         if (CurrentBox == null) return;
-
         IsVerificationMode = true;
-        
         foreach (var item in CurrentBox.Items)
         {
             item.ConfirmedQuantity = 0;
-            // StatusColor jest obliczany w modelu (Ignore), więc nie musimy go tu ustawiać ręcznie
+            item.IsMissing = false;
+            item.IsDamaged = false;
         }
     }
 
     [RelayCommand]
     private async Task EditQuantity(Item item)
     {
-        string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", 
+        if (!IsEditable) return;
+
+        string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość",
             initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
-        
+
         if (int.TryParse(result, out int newQty))
         {
+            int oldQty = item.Quantity;
             item.Quantity = newQty;
-            // Wywołanie zapisu do bazy
-            // await _storageService.Update(CurrentBox);
+            await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
+            await _storageService.UpdateBox(CurrentBox);
         }
     }
 
-    public void ProcessScannedItem(string productCode)
+    [RelayCommand]
+    private async Task ReportIssue(Item item)
     {
-        if (!IsVerificationMode || CurrentBox == null) return;
+        string action = await Shell.Current.DisplayActionSheet("Rozbieżność", "Anuluj", null, "Zaginięcie", "Uszkodzenie");
 
-        var item = CurrentBox.Items.FirstOrDefault(i => i.ProductSku == productCode);
-        
-        if (item != null)
-        {
-            item.ConfirmedQuantity++;
-        }
-        else
-        {
-            // Używamy DisplayAlertAsync (poprawka dla ostrzeżenia CS0618)
-            MainThread.BeginInvokeOnMainThread(async () => 
-            {
-                await Shell.Current.DisplayAlert("Błąd", "Produkt nie należy do tego kartonu!", "OK");
-            });
-        }
+        if (action == "Zaginięcie") item.IsMissing = true;
+        else if (action == "Uszkodzenie") item.IsDamaged = true;
+        else return;
+
+        item.Notes = await Shell.Current.DisplayPromptAsync("Notatka", "Powód:");
+        await _storageService.UpdateBox(CurrentBox!);
     }
 }

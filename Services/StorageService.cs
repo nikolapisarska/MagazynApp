@@ -21,6 +21,8 @@ public class StorageService : IStorageService
                 _db = new SQLiteAsyncConnection(_dbPath);
                 await _db.CreateTableAsync<Product>();
                 await _db.CreateTableAsync<Box>();
+                // Jeśli dodasz tabelę AuditLog, dopisz tutaj:
+                // await _db.CreateTableAsync<AuditLog>();
                 _isInitialized = true;
             }
         }
@@ -28,8 +30,6 @@ public class StorageService : IStorageService
         {
             _semaphore.Release();
         }
-
-        System.Diagnostics.Debug.WriteLine($"Ścieżka do bazy: {_dbPath}");
     }
 
     public async Task<Product?> GetProductByCodeAsync(string code)
@@ -48,6 +48,7 @@ public class StorageService : IStorageService
     public async Task SaveBoxAsync(Box box)
     {
         await EnsureInitializedAsync();
+        box.PrepareForSave();
         await _db!.InsertOrReplaceAsync(box);
     }
 
@@ -59,18 +60,23 @@ public class StorageService : IStorageService
         return box;
     }
 
+    // Alias dla spójności
+    public async Task<Box?> GetBoxByCode(string boxCode) => await GetBoxByCodeAsync(boxCode);
+
     public async Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode)
     {
         await EnsureInitializedAsync();
         var allClosed = await _db!.Table<Box>().Where(b => b.IsClosed).ToListAsync();
+        foreach (var box in allClosed) box.LoadAfterRead();
         return allClosed.Where(b => b.Items.Any(i => i.ProductId == productCode)).ToList();
     }
 
     public async Task<List<Box>> GetAllBoxesAsync()
     {
         await EnsureInitializedAsync();
-
-        return await _db!.Table<Box>().ToListAsync();
+        var list = await _db!.Table<Box>().ToListAsync();
+        foreach (var box in list) box.LoadAfterRead();
+        return list;
     }
 
     public async Task<List<Product>> GetProductsAsync()
@@ -79,17 +85,12 @@ public class StorageService : IStorageService
         return await _db!.Table<Product>().ToListAsync();
     }
 
-    public async Task<List<Box>> GetBoxesAsync()
-    {
-        await EnsureInitializedAsync();
-        return await _db!.Table<Box>().ToListAsync();
-    }
+    public async Task<List<Box>> GetBoxesAsync() => await GetAllBoxesAsync();
 
     public async Task ExportDataToFile(string fileName, string content)
     {
         string path = Path.Combine(FileSystem.AppDataDirectory, fileName);
         await File.WriteAllTextAsync(path, content);
-        // Opcjonalnie: poinformuj użytkownika
         await Shell.Current.DisplayAlert("Sukces", $"Plik zapisano w: {path}", "OK");
     }
 
@@ -98,11 +99,7 @@ public class StorageService : IStorageService
         await EnsureInitializedAsync();
         foreach (var product in products)
         {
-            // Jeśli Id jest 0, SQLite nada nowe Id automatycznie (dzięki AutoIncrement)
-            if (product.Id == 0)
-                await _db!.InsertAsync(product);
-            else
-                await _db!.InsertOrReplaceAsync(product);
+            await _db!.InsertOrReplaceAsync(product);
         }
     }
 
@@ -111,30 +108,24 @@ public class StorageService : IStorageService
         await EnsureInitializedAsync();
         foreach (var box in boxes)
         {
-            box.PrepareForSave(); // Serializuje listę Items do ItemsJson
+            box.PrepareForSave();
             await _db!.InsertOrReplaceAsync(box);
         }
     }
 
-    public async Task<Box?> GetBoxByCode(string boxCode) // To implementuje IStorageService.GetBoxByCode
+    public async Task Update(Box box)
     {
         await EnsureInitializedAsync();
-        var box = await _db!.Table<Box>().FirstOrDefaultAsync(b => b.BoxCode == boxCode);
-
-        if (box != null)
-        {
-            // Skoro używasz metody PrepareForSave/LoadAfterRead, 
-            // to deserializacja odbywa się wewnątrz obiektu Box
-            box.LoadAfterRead();
-        }
-
-        return box;
+        box.PrepareForSave();
+        await _db!.UpdateAsync(box);
     }
 
-    public async Task Update(Box box) // To implementuje IStorageService.Update
+    public async Task UpdateBox(Box box) => await Update(box);
+
+    public async Task LogAudit(string boxCode, string sku, int oldVal, int newVal, string reason)
     {
-        await EnsureInitializedAsync();
-        box.PrepareForSave(); // Serializuje listę Items do JSON przed zapisem
-        await _db!.UpdateAsync(box);
+        // Zapis do logów (można rozbudować o tabelę w SQLite)
+        System.Diagnostics.Debug.WriteLine($"[AUDIT] {DateTime.Now}: {boxCode} | {sku} | {oldVal}->{newVal} | {reason}");
+        await Task.CompletedTask;
     }
 }

@@ -4,13 +4,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace MagazynApp.Model;
 
-
-
-
-public class Box
+public partial class Box : ObservableObject
 {
     [PrimaryKey] public string BoxCode { get; set; } = string.Empty;
     public bool IsClosed { get; set; }
+    
+    [ObservableProperty] private string _status = "W kompletacji"; // Dodano Status
+    
     public string ItemsJson { get; set; } = "[]";
 
     [Ignore] public List<Item> Items { get; set; } = new();

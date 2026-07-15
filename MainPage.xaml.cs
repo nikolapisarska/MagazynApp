@@ -31,7 +31,7 @@ public partial class MainPage : ContentPage
 
         if (sender is Entry entry)
         {
-            // Sprawdzamy czy tekst nie jest pusty
+          
             if (string.IsNullOrWhiteSpace(entry.Text))
             {
                 Debug.WriteLine("DEBUG: Entry jest puste, przerywam.");
