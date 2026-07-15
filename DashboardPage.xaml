@@ -19,11 +19,15 @@
                     BackgroundColor="#fcc821" 
                     TextColor="Black" 
                     FontAttributes="Bold" 
-                    HeightRequest="60"/><Label Text="Skompletuj nowy karton" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
+                    HeightRequest="60"/>
+            <Label Text="Skompletuj nowy karton" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
 
-            <Button Text="WERYFIKUJ KARTON" 
-                    BackgroundColor="#2D2D2D" TextColor="White" 
-                    BorderColor="#fcc821" BorderWidth="1" HeightRequest="60" Margin="0,50,0,0"/>
+            <Button Text="Wyszukaj KARTON" 
+                    Clicked="OnSearchClicked" 
+                    BackgroundColor="#fcc821" 
+                    TextColor="Black" 
+                    FontAttributes="Bold" 
+                    HeightRequest="60"/>
             <Label Text="Skanuj kod, zobacz co jest w środku" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
         </VerticalStackLayout>
         <VerticalStackLayout Spacing="10" Margin="0,20,0,0">
