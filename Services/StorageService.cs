@@ -21,8 +21,7 @@ public class StorageService : IStorageService
                 _db = new SQLiteAsyncConnection(_dbPath);
                 await _db.CreateTableAsync<Product>();
                 await _db.CreateTableAsync<Box>();
-                // Jeśli dodasz tabelę AuditLog, dopisz tutaj:
-                // await _db.CreateTableAsync<AuditLog>();
+                await _db.CreateTableAsync<AuditLog>(); // DODANO TABELĘ AUDYTU
                 _isInitialized = true;
             }
         }
@@ -42,7 +41,7 @@ public class StorageService : IStorageService
     {
         await EnsureInitializedAsync();
         var box = await GetBoxByCodeAsync(boxCode);
-        return box ?? new Box { BoxCode = boxCode };
+        return box ?? new Box { BoxCode = boxCode, Status = "Nowy", Weight = 0.0 };
     }
 
     public async Task SaveBoxAsync(Box box)
@@ -60,7 +59,6 @@ public class StorageService : IStorageService
         return box;
     }
 
-    // Alias dla spójności
     public async Task<Box?> GetBoxByCode(string boxCode) => await GetBoxByCodeAsync(boxCode);
 
     public async Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode)
@@ -122,10 +120,20 @@ public class StorageService : IStorageService
 
     public async Task UpdateBox(Box box) => await Update(box);
 
+    // ZAKTUALIZOWANA METODA LOGOWANIA
     public async Task LogAudit(string boxCode, string sku, int oldVal, int newVal, string reason)
     {
-        // Zapis do logów (można rozbudować o tabelę w SQLite)
-        System.Diagnostics.Debug.WriteLine($"[AUDIT] {DateTime.Now}: {boxCode} | {sku} | {oldVal}->{newVal} | {reason}");
-        await Task.CompletedTask;
+        await EnsureInitializedAsync();
+        var log = new AuditLog 
+        { 
+            BoxCode = boxCode, 
+            Sku = sku,
+            OldQuantity = oldVal,
+            NewQuantity = newVal,
+            Reason = reason
+        };
+        await _db!.InsertAsync(log);
+        
+        System.Diagnostics.Debug.WriteLine($"[AUDIT ZAPISANO] {log.Description}");
     }
 }

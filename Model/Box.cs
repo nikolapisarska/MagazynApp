@@ -9,7 +9,10 @@ public partial class Box : ObservableObject
     [PrimaryKey] public string BoxCode { get; set; } = string.Empty;
     public bool IsClosed { get; set; }
     
-    [ObservableProperty] private string _status = "W kompletacji"; // Dodano Status
+    [ObservableProperty] private string _status = "W kompletacji";
+    
+    // Dodano pole wagi z atrybutem ObservableProperty
+    [ObservableProperty] private double _weight = 0.0; 
     
     public string ItemsJson { get; set; } = "[]";
 

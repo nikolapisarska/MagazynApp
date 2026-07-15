@@ -6,66 +6,74 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
 
+    <!-- Dodane 5 rzędów siatki -->
     <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
-        <!-- 1. NAGŁÓWEK -->
+        
+        <!-- 0. NAGŁÓWEK GŁÓWNY -->
         <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
-            <Label Text="Panel Magazynowy" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+            <Label Text="Centrum Operacyjne" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
 
-        <!-- 2. SCANNER -->
+        <!-- 1. SCANNER KARTONU -->
         <VerticalStackLayout Grid.Row="1" Padding="15" Spacing="8">
             <SearchBar x:Name="ScanEntry"
                        Text="{Binding ScanInput}"
                        SearchCommand="{Binding ProcessScanCommand}"
-                       Placeholder="Zeskanuj kod..."
+                       Placeholder="Zeskanuj kod kartonu..."
                        PlaceholderColor="Gray"
                        TextColor="White" 
-                       BackgroundColor="#424242" 
-                       SearchButtonPressed="OnSearchButtonPressed" />
-    
-        <!-- 3. HISTORIA SKANOWAŃ -->
-        <HorizontalStackLayout Grid.Row="2" Padding="15, 0" Spacing="10">
-            <Label Text="Ostatnie:" VerticalOptions="Center" TextColor="Gray" FontSize="12"/>
-            <CollectionView ItemsSource="{Binding RecentScans}" HeightRequest="30">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Label Text="{Binding .}" TextColor="#fcc821" FontAttributes="Bold" VerticalOptions="Center">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=SearchAsyncCommand}" 
-                                                      CommandParameter="{Binding .}"/>
-                            </Label.GestureRecognizers>
-                        </Label>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </HorizontalStackLayout>
+                       BackgroundColor="#424242" />
+        </VerticalStackLayout>
 
-        <!-- 4. LISTA PRODUKTÓW -->
+        <!-- 2. NAGŁÓWEK DETALI KARTONU (Widoczny jeśli karton jest zeskanowany) -->
+        <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="5" BackgroundColor="#2C2C2C">
+            <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="22" FontAttributes="Bold" TextColor="White"/>
+            <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" TextColor="#FFB300" FontAttributes="Bold"/>
+            
+            <Grid ColumnDefinitions="*,Auto" Margin="0,5,0,0">
+                <Label Text="{Binding CurrentBox.Weight, StringFormat='Waga: {0} kg'}" VerticalOptions="Center" TextColor="#B0BEC5"/>
+                <ImageButton Grid.Column="1" Source="edit_icon.png" WidthRequest="25" HeightRequest="25" Command="{Binding EditBoxPropertiesCommand}" BackgroundColor="Transparent" Padding="2" />
+            </Grid>
+        </VerticalStackLayout>
+
+        <!-- 3. LISTA PRODUKTÓW W KARTONIE -->
         <CollectionView Grid.Row="3" ItemsSource="{Binding CurrentBox.Items}">
+            <!-- Nagłówek Tabeli -->
             <CollectionView.Header>
-                <VerticalStackLayout Padding="15">
-                    <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="18" FontAttributes="Bold" TextColor="White"/>
-                </VerticalStackLayout>
+                <Grid Padding="10" ColumnDefinitions="*, 50, 50, 40" BackgroundColor="#1E1E1E" Margin="0,0,0,5">
+                    <Label Text="Produkt / Nazwa" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
+                    <Label Text="Sys" Grid.Column="1" HorizontalOptions="Center" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
+                    <Label Text="Fakt" Grid.Column="2" HorizontalOptions="Center" FontAttributes="Bold" TextColor="#81C784" VerticalOptions="Center"/>
+                    <Label Text="Edycja" Grid.Column="3" HorizontalOptions="Center" FontAttributes="Bold" TextColor="Gray" FontSize="10" VerticalOptions="Center"/>
+                </Grid>
             </CollectionView.Header>
+            
+            <!-- Elementy Tabeli -->
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Padding="10" ColumnDefinitions="*, 60, 60, 50" BackgroundColor="#1E1E1E" Margin="0,2">
-                        <Label Text="{Binding ProductName}" VerticalOptions="Center" TextColor="White"/>
-                        <Label Text="{Binding Quantity}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    <Grid Padding="10" ColumnDefinitions="*, 50, 50, 40" BackgroundColor="#242424" Margin="0,2">
+                        <Label Text="{Binding ProductName}" VerticalOptions="Center" TextColor="White" LineBreakMode="TailTruncation"/>
+                        <Label Text="{Binding Quantity}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" TextColor="LightGray"/>
                         <Label Text="{Binding ConfirmedQuantity}" Grid.Column="2" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" TextColor="#81C784"/>
-                        <ImageButton Grid.Column="3" Source="edit_icon.png" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=EditQuantityCommand}" CommandParameter="{Binding .}"/>
+                        <!-- Przycisk edycji podłączony do RelatvieSource -->
+                        <ImageButton Grid.Column="3" Source="edit_icon.png" WidthRequest="22" HeightRequest="22" BackgroundColor="Transparent" 
+                                     Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=EditQuantityCommand}" 
+                                     CommandParameter="{Binding .}"/>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
-        </VerticalStackLayout>
 
-        <!-- 5. ACTION BAR -->
-        <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15">
-            <Button Text="Rozpocznij Inwentaryzację" Command="{Binding StartVerificationCommand}" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50"/>
+        <!-- 4. ACTION BAR (Dolny pasek narzędzi) -->
+        <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E">
+            
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                <Button Text="Dodaj Produkt" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
+                <Button Grid.Column="1" Text="Zgłoś Rozbieżność" Command="{Binding ReportIssueCommand}" BackgroundColor="#F44336" TextColor="White" FontAttributes="Bold"/>
+            </Grid>
+            
+            <Button Text="Weryfikuj Zgodność" Command="{Binding StartVerificationCommand}" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50"/>
+        
         </VerticalStackLayout>
     </Grid>
 </ContentPage>
