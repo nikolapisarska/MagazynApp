@@ -10,18 +10,20 @@ public class StorageService : IStorageService
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     private bool _isInitialized = false;
 
+    // W StorageService.cs, zmień EnsureInitializedAsync na to:
     private async Task EnsureInitializedAsync()
     {
         if (_isInitialized) return;
+    
         await _semaphore.WaitAsync();
         try
         {
             if (!_isInitialized)
             {
-                _db = new SQLiteAsyncConnection(_dbPath);
+                _db = new SQLiteAsyncConnection(_dbPath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
                 await _db.CreateTableAsync<Product>();
                 await _db.CreateTableAsync<Box>();
-                await _db.CreateTableAsync<AuditLog>(); // DODANO TABELĘ AUDYTU
+                await _db.CreateTableAsync<AuditLog>();
                 _isInitialized = true;
             }
         }
@@ -135,5 +137,14 @@ public class StorageService : IStorageService
         await _db!.InsertAsync(log);
         
         System.Diagnostics.Debug.WriteLine($"[AUDIT ZAPISANO] {log.Description}");
+    }
+    public async Task InitializeAsync()
+    {
+        // Tutaj np. tworzysz tabele, jeśli nie istnieją
+        // await Database.CreateTableAsync<Product>();
+        // await Database.CreateTableAsync<Box>();
+        
+        // Jeśli nie musisz nic robić, zostaw po prostu:
+        await Task.CompletedTask; 
     }
 }

@@ -5,9 +5,9 @@ namespace MagazynApp.Model;
 
 public partial class Item : ObservableObject
 {
-    public string ProductId { get; set; }
-    public string ProductSku { get; set; }
-    public string ProductName { get; set; }
+    public string ProductId { get; set; } = string.Empty;
+    public string ProductSku { get; set; } = string.Empty;
+    public string ProductName { get; set; } = string.Empty; // Zamiast zostawiać puste
 
     [ObservableProperty] private int _quantity;
     [ObservableProperty] private int _confirmedQuantity;
@@ -16,7 +16,8 @@ public partial class Item : ObservableObject
     [ObservableProperty] private string _status = "OK"; // OK, Missing, Damaged
 
     [ObservableProperty] private string _notes;
-
+   
+   
     // Pola dla list
     [Ignore] public int Lp { get; set; }
     [Ignore] public bool IsEven { get; set; }

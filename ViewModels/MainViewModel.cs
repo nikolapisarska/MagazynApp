@@ -10,12 +10,12 @@ namespace MagazynApp.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly IStorageService _storageService;
+    private readonly NavigationState _navState;
 
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
     [ObservableProperty] private Product? _foundProduct;
 
-    // Właściwość z powiadomieniem dla UI - zmiana otwiera/zamyka widoczność elementów
     private Box? _currentBox;
     public Box? CurrentBox 
     {
@@ -30,24 +30,19 @@ public partial class MainViewModel : ObservableObject
     }
 
     public bool IsBoxOpen => CurrentBox != null;
-
     public ObservableCollection<Item> CurrentItems { get; } = new();
     public ObservableCollection<Box> FoundClosedBoxes { get; } = new();
 
-    public MainViewModel(IStorageService storageService)
+    public MainViewModel(IStorageService storageService, NavigationState navState)
     {
         _storageService = storageService;
+        _navState = navState;
     }
-
-    #region Komendy Eksportu i Importu
-
     [RelayCommand]
     private async Task ExportDataAsync()
     {
         try
-        {
-            string action = await Shell.Current.DisplayActionSheet("Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
-            if (action == "Anuluj") return;
+        {string action = await Shell.Current.DisplayActionSheetAsync("Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");  if (action == "Anuluj") return;
 
             string json = action == "Produkty" 
                 ? JsonSerializer.Serialize(await _storageService.GetProductsAsync())
@@ -83,19 +78,14 @@ public partial class MainViewModel : ObservableObject
             else
                 await _storageService.SaveBoxesAsync(JsonSerializer.Deserialize<List<Box>>(jsonContent) ?? new());
 
-            await Shell.Current.DisplayAlert("Sukces", "Dane zaimportowane.", "OK");
-        }
+            await Shell.Current.DisplayAlertAsync("Sukces", "Dane zaimportowane.", "OK");  }
         catch (Exception ex)
         {
             await Shell.Current.DisplayAlert("Błąd", ex.Message, "OK");
         }
     }
 
-    #endregion
-
-    #region Logika Skanowania
-
-    [RelayCommand]
+   [RelayCommand]
     private async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
 
     public async Task ExecuteProcessScanAsync()
@@ -105,14 +95,12 @@ public partial class MainViewModel : ObservableObject
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty;
 
-        // 1. Sprawdzamy, czy zeskanowany kod to PRODUKT
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
             FoundProduct = product;
             if (CurrentBox != null)
             {
-                // Jeśli mamy otwarty karton, dodajemy produkt do listy
                 var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
                 if (existingItem != null) existingItem.Quantity += 1;
                 else
@@ -128,7 +116,6 @@ public partial class MainViewModel : ObservableObject
             }
             else
             {
-                // Jeśli nie mamy otwartego kartonu, szukamy, w których kartonach jest ten produkt
                 FoundClosedBoxes.Clear();
                 var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
                 foreach (var b in boxes) FoundClosedBoxes.Add(b);
@@ -137,17 +124,11 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        // 2. Jeśli to nie produkt, sprawdzamy czy to KARTON
-        if (CurrentBox != null) 
-        { 
-            StatusMessage = "Najpierw zamknij otwarty karton!"; 
-            return; 
-        }
+        if (CurrentBox != null) { StatusMessage = "Najpierw zamknij otwarty karton!"; return; }
 
         var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
         if (existingBox != null)
         {
-            // Otwieramy istniejący karton
             CurrentBox = existingBox;
             CurrentBox.LoadAfterRead();
             CurrentBox.IsClosed = false;
@@ -159,7 +140,6 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
-            // Tworzymy nowy karton, jeśli nie istnieje
             CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
             CurrentBox.IsClosed = false;
             await _storageService.SaveBoxAsync(CurrentBox);
@@ -169,14 +149,8 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    #endregion
-
-    #region Operacje na kartonie
-
     [RelayCommand]
-    private async Task SaveAndCloseAsync() => await SaveAndCloseBoxAsync();
-
-    public async Task SaveAndCloseBoxAsync()
+    public async Task SaveAndCloseAsync()
     {
         if (CurrentBox == null) return;
         CurrentBox.IsClosed = true;
@@ -184,6 +158,13 @@ public partial class MainViewModel : ObservableObject
         StatusMessage = $"Karton {CurrentBox.BoxCode} zamknięty.";
         CurrentBox = null; 
         CurrentItems.Clear();
+
+        // SPRAWDZENIE CZY WRACAĆ
+        if (_navState.ShouldReturnToSearch)
+        {
+            _navState.ShouldReturnToSearch = false; // Reset
+            await Shell.Current.GoToAsync("BoxSearchPage");
+        }
     }
 
     [RelayCommand]
@@ -213,11 +194,10 @@ public partial class MainViewModel : ObservableObject
             CurrentItems[i].IsEven = (i + 1) % 2 == 0; 
         }
     }
-
-    #endregion
-
     public async Task InitializeLocalDatabaseAsync()
     {
-        System.Diagnostics.Debug.WriteLine("Baza danych gotowa.");
+        // Tutaj umieść logikę inicjalizacji bazy, jeśli istnieje
+        // Jeśli używasz _storageService, być może chodzi o:
+        await _storageService.InitializeAsync(); 
     }
 }

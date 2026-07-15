@@ -14,7 +14,8 @@
             <Label Text="Panel Magazynowy" TextColor="White" FontSize="30" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
         <VerticalStackLayout Spacing="15" Margin="0,50,0,20">
-            <Button Text="ROZPOCZNIJ KOMPLETACJĘ" 
+            
+            <Button Text="Rozpocznij Komplementację" 
                     Clicked="OnStartPickingClicked" 
                     BackgroundColor="#fcc821" 
                     TextColor="Black" 
@@ -22,13 +23,14 @@
                     HeightRequest="60"/>
             <Label Text="Skompletuj nowy karton" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
 
-            <Button Text="Wyszukaj KARTON" 
+            <Button Text="Wyszukaj Karton" 
                     Clicked="OnSearchClicked" 
                     BackgroundColor="#fcc821" 
                     TextColor="Black" 
                     FontAttributes="Bold" 
                     HeightRequest="60"/>
             <Label Text="Skanuj kod, zobacz co jest w środku" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
+            
         </VerticalStackLayout>
         <VerticalStackLayout Spacing="10" Margin="0,20,0,0">
             <Button Text="EXPORT DANYCH" 

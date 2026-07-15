@@ -31,7 +31,7 @@ public partial class MainPage : ContentPage
 
         if (sender is Entry entry)
         {
-          
+            // Sprawdzamy czy tekst nie jest pusty
             if (string.IsNullOrWhiteSpace(entry.Text))
             {
                 Debug.WriteLine("DEBUG: Entry jest puste, przerywam.");
@@ -63,7 +63,7 @@ public partial class MainPage : ContentPage
     private async void OnSaveAndCloseClicked(object? sender, EventArgs e)
     {
         Debug.WriteLine("DEBUG: Przycisk Zapisz i Zamknij kliknięty.");
-        await _viewModel.SaveAndCloseBoxAsync();
+        await _viewModel.SaveAndCloseAsync();
         
         await Task.Delay(100);
         ScanEntry.Focus();

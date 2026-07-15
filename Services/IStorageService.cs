@@ -22,4 +22,5 @@ public interface IStorageService
     Task ExportDataToFile(string fileName, string content);
     Task SaveProductsAsync(List<Product> products);
     Task SaveBoxesAsync(List<Box> boxes);
+    Task InitializeAsync();
 }

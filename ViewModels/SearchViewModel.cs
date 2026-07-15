@@ -9,6 +9,7 @@ namespace MagazynApp.ViewModels;
 public partial class SearchViewModel : ObservableObject
 {
     private readonly IStorageService _storageService;
+    private readonly NavigationState _navState;
 
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć";
@@ -20,12 +21,20 @@ public partial class SearchViewModel : ObservableObject
     [ObservableProperty] private bool _isVerificationMode;
 
     public ObservableCollection<string> RecentScans { get; } = new();
-
     public bool IsEditable => CurrentBox != null && CurrentBox.Status != "Wysłany";
 
-    public SearchViewModel(IStorageService storageService)
+    public SearchViewModel(IStorageService storageService, NavigationState navState)
     {
         _storageService = storageService;
+        _navState = navState;
+    }
+
+    [RelayCommand]
+    private async Task AddProductAsync()
+    {
+        _navState.ShouldReturnToSearch = true;
+        // Używamy nameof, żeby pasowało do rejestracji w AppShell
+        await Shell.Current.GoToAsync(nameof(MainPage));
     }
 
     [RelayCommand]
@@ -34,9 +43,8 @@ public partial class SearchViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
 
         string codeToSearch = ScanInput.Trim();
-        ScanInput = string.Empty; // Czyścimy pole natychmiast
+        ScanInput = string.Empty;
 
-        // 1. Wyszukiwanie
         var box = await _storageService.GetBoxByCodeAsync(codeToSearch);
 
         if (box == null)
@@ -46,32 +54,13 @@ public partial class SearchViewModel : ObservableObject
             return;
         }
 
-        // 2. Zarządzanie historią
         if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
         RecentScans.Insert(0, codeToSearch);
         while (RecentScans.Count > 5) RecentScans.RemoveAt(5);
 
-        // 3. Ustawienie danych
         CurrentBox = box;
         StatusMessage = $"Otwarto karton: {codeToSearch}";
-        
-        // Opcjonalna nawigacja (odkomentuj jeśli potrzebujesz)
-        // await Shell.Current.GoToAsync("BoxDetailsPage");
     }
-
-    [RelayCommand]
-    private void StartVerification()
-    {
-        if (CurrentBox == null) return;
-        IsVerificationMode = true;
-        foreach (var item in CurrentBox.Items)
-        {
-            item.ConfirmedQuantity = 0;
-            item.IsMissing = false;
-            item.IsDamaged = false;
-        }
-    }
-
     [RelayCommand]
     private async Task EditQuantity(Item item)
     {
