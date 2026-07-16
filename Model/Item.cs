@@ -7,17 +7,20 @@ public partial class Item : ObservableObject
 {
     public string ProductId { get; set; } = string.Empty;
     public string ProductSku { get; set; } = string.Empty;
-    public string ProductName { get; set; } = string.Empty; // Zamiast zostawiać puste
+    public string ProductName { get; set; } = string.Empty;
     public bool IsValid => Quantity == ConfirmedQuantity;
+
     [ObservableProperty] private int _quantity;
     [ObservableProperty] private int _confirmedQuantity;
     [ObservableProperty] private bool _isMissing;
     [ObservableProperty] private bool _isDamaged;
-    [ObservableProperty] private string _status = "OK"; // OK, Missing, Damaged
-
+    [ObservableProperty] private string _status = "OK";
     [ObservableProperty] private string _notes;
-   
-   
+
+    // To pole jest wymagane przez DataTrigger w Twoim XAML, 
+    // aby podświetlić wiersz na czerwono po zgłoszeniu problemu
+    [ObservableProperty] private bool _isFlagged; 
+
     // Pola dla list
     [Ignore] public int Lp { get; set; }
     [Ignore] public bool IsEven { get; set; }
@@ -34,6 +37,7 @@ public partial class Item : ObservableObject
         ? Colors.Orange
         : (IsDamaged ? Colors.Red : (ConfirmedQuantity >= Quantity ? Colors.Green : Colors.White));
 
+    // Metody częściowe dla aktualizacji UI
     partial void OnConfirmedQuantityChanged(int value)
     {
         OnPropertyChanged(nameof(ExpectedVsConfirmed));

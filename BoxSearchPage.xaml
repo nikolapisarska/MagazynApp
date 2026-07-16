@@ -6,21 +6,15 @@
              x:Class="MagazynApp.BoxSearchPage"
              Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
-    <ContentPage.Resources>
-        <ResourceDictionary>
-            <local:BoolToTrueFalseConverter x:Key="TrueFalseConverter" />
-        </ResourceDictionary>
-    </ContentPage.Resources>
 
-  
     <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
         
-        <!-- 0. NAGŁÓWEK GŁÓWNY -->
+        <!-- 0. NAGŁÓWEK -->
         <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
             <Label Text="Centrum Operacyjne" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
 
-        <!-- 1. SCANNER KARTONU -->
+        <!-- 1. SCANNER -->
         <VerticalStackLayout Grid.Row="1" Padding="15" Spacing="8">
             <SearchBar x:Name="ScanEntry"
                        Text="{Binding ScanInput}"
@@ -30,103 +24,50 @@
                        TextColor="White" 
                        BackgroundColor="#424242" />
             
-            <Label Text="{Binding StatusMessage}" 
-                   TextColor="Yellow" 
-                   FontSize="12" 
-                   HorizontalOptions="Center"/>
-
-            <!-- Wskaźnik trybu -->
-            <!-- ZMIEŃ TO NA PONIŻSZE: -->
-            <Label FontAttributes="Bold" HorizontalOptions="Center">
-                <Label.Style>
-                    <Style TargetType="Label">
-                        <Setter Property="Text" Value="TRYB: SKANOWANIE KARTONÓW" />
-                        <Setter Property="TextColor" Value="Gray" />
-                        <Style.Triggers>
-                            <DataTrigger TargetType="Label" Binding="{Binding IsVerificationMode}" Value="True">
-                                <Setter Property="Text" Value="TRYB: WERYFIKACJA PRODUKTÓW" />
-                                <Setter Property="TextColor" Value="Orange" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Label.Style>
-            </Label>
+            <Label Text="{Binding StatusMessage}" TextColor="Yellow" FontSize="12" HorizontalOptions="Center"/>
         </VerticalStackLayout>
 
-        <!-- 2. NAGŁÓWEK DETALI KARTONU -->
+        <!-- 2. DETALE KARTONU -->
         <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="5" BackgroundColor="#2C2C2C">
             <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="22" FontAttributes="Bold" TextColor="White"/>
             <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" TextColor="#FFB300" FontAttributes="Bold"/>
-            
-            <Grid ColumnDefinitions="*,Auto" Margin="0,5,0,0">
-                <Label Text="{Binding CurrentBox.Weight, StringFormat='Waga: {0} kg'}" VerticalOptions="Center" TextColor="#B0BEC5"/>
-                <ImageButton Grid.Column="1" Source="edit_icon.png" WidthRequest="25" HeightRequest="25" Command="{Binding EditBoxPropertiesCommand}" BackgroundColor="Transparent" Padding="2" />
-            </Grid>
         </VerticalStackLayout>
 
-        <!-- 3. LISTA PRODUKTÓW W KARTONIE -->
+        <!-- 3. LISTA PRODUKTÓW -->
         <CollectionView Grid.Row="3" ItemsSource="{Binding CurrentBox.Items}">
             <CollectionView.Header>
-                <Grid Padding="10" ColumnDefinitions="*, 50, 50, 40" BackgroundColor="#1E1E1E" Margin="0,0,0,5">
-                    <Label Text="Produkt / Nazwa" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
-                    <Label Text="Sys" Grid.Column="1" HorizontalOptions="Center" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
-                    <Label Text="Fakt" Grid.Column="2" HorizontalOptions="Center" FontAttributes="Bold" TextColor="#81C784" VerticalOptions="Center"/>
+                <Grid Padding="10" ColumnDefinitions="*, 40, 40" BackgroundColor="#1E1E1E" Margin="0,0,0,5">
+                    <Label Text="Produkt" FontAttributes="Bold" TextColor="White"/>
+                    <Label Text="Stan" Grid.Column="1" HorizontalOptions="Center" FontAttributes="Bold" TextColor="White"/>
                 </Grid>
             </CollectionView.Header>
             
             <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Grid Padding="10" ColumnDefinitions="*, 50, 50, 40" BackgroundColor="#242424" Margin="0,2">
-                        <Label Text="{Binding ProductName}" VerticalOptions="Center" TextColor="White" LineBreakMode="TailTruncation"/>
-                        <Label Text="{Binding Quantity}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" TextColor="LightGray"/>
-                        
-                        <Label Text="{Binding ConfirmedQuantity}" 
-                               Grid.Column="2" 
-                               FontAttributes="Bold" 
-                               HorizontalOptions="Center" 
-                               VerticalOptions="Center">
-                            <Label.Triggers>
-                                <DataTrigger TargetType="Label" Binding="{Binding ConfirmedQuantity}" Value="{Binding Quantity}">
-                                    <Setter Property="TextColor" Value="#81C784" />
+                    <DataTemplate>
+                        <Grid Padding="25" ColumnDefinitions="*, 60" BackgroundColor="#242424" Margin="0,2">
+                            <!-- Cały wiersz jest klikalny i otwiera pełne menu -->
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer 
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=OpenIssuePopupCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Grid.GestureRecognizers>
+            
+                            <Grid.Triggers>
+                                <DataTrigger TargetType="Grid" Binding="{Binding IsFlagged}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="#4A1414" />
                                 </DataTrigger>
-                                <DataTrigger TargetType="Label" Binding="{Binding ConfirmedQuantity}" Value="{x:Null}">
-                                    <Setter Property="TextColor" Value="#F44336" />
-                                </DataTrigger>
-                            </Label.Triggers>
-                        </Label>
-                        
-                        <ImageButton Grid.Column="3" Source="edit_icon.png" WidthRequest="22" HeightRequest="22" BackgroundColor="Transparent" 
-                                     Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=EditQuantityCommand}" 
-                                     CommandParameter="{Binding .}"/>
-                    </Grid>
-                </DataTemplate>
+                            </Grid.Triggers>
+
+                            <Label Text="{Binding ProductName}" VerticalOptions="Center" TextColor="White" LineBreakMode="TailTruncation"/>
+                            <Label Text="{Binding Quantity}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" TextColor="LightGray"/>
+                        </Grid>
+                    </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
 
         <!-- 4. ACTION BAR -->
         <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E">
-            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
-                <Button Text="Edytuj" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
-                <Button Grid.Column="1" Text="Zgłoś Rozbieżność" Command="{Binding ReportIssueCommand}" BackgroundColor="#F44336" TextColor="White" FontAttributes="Bold"/>
-            </Grid>
-            
-            <!-- Przycisk przełączania trybu z Trigerem -->
-            <Button Command="{Binding ToggleVerificationModeCommand}" 
-                    TextColor="Black" FontAttributes="Bold" HeightRequest="50">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Text" Value="Włącz Tryb Weryfikacji" />
-                        <Setter Property="BackgroundColor" Value="#4CAF50" />
-                        <Style.Triggers>
-                            <DataTrigger TargetType="Button" Binding="{Binding IsVerificationMode}" Value="True">
-                                <Setter Property="Text" Value="Wyłącz Tryb Weryfikacji" />
-                                <Setter Property="BackgroundColor" Value="#F44336" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-            
+            <Button Text="Dodaj Produkt" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
             <Button Text="Weryfikuj Zgodność" Command="{Binding StartVerificationCommand}" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50"/>
         </VerticalStackLayout>
     </Grid>

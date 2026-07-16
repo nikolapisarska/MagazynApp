@@ -46,7 +46,6 @@ public partial class SearchViewModel : ObservableObject
     {
         var updatedBox = await _storageService.GetBoxByCodeAsync(boxCode);
     
-        // Użyj MainThread.BeginInvokeOnMainThread, aby upewnić się, że to bezpieczne
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (updatedBox != null)
@@ -56,21 +55,13 @@ public partial class SearchViewModel : ObservableObject
             }
         });
     }
+
     [RelayCommand]
     private async Task AddProductAsync()
     {
         if (CurrentBox == null) return;
         _navState.ShouldReturnToSearch = true;
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
-    }
-
-    [RelayCommand]
-    private void ToggleVerificationMode()
-    {
-        IsVerificationMode = !IsVerificationMode;
-        StatusMessage = IsVerificationMode
-            ? "Tryb weryfikacji: Skanuj kody produktów."
-            : "Tryb standardowy: Skanuj kody kartonów.";
     }
 
     private void IncrementProductQuantity(string sku)
@@ -144,18 +135,38 @@ public partial class SearchViewModel : ObservableObject
         }
     }
 
+    // Nowa metoda obsługująca kliknięcie w wiersz
     [RelayCommand]
-    private async Task ReportIssue(Item item)
+    private async Task OpenIssuePopup(Item item)
     {
-        string? action = await Shell.Current.DisplayActionSheetAsync("Rozbieżność", "Anuluj", null, "Zaginięcie", "Uszkodzenie");
-        if (action == "Zaginięcie") item.IsMissing = true;
-        else if (action == "Uszkodzenie") item.IsDamaged = true;
-        else return;
+        // Dodajemy "Edytuj ilość" do listy opcji
+        string? action = await Shell.Current.DisplayActionSheetAsync(
+            $"Produkt: {item.ProductName}", 
+            "Anuluj", 
+            null, 
+            "Edytuj ilość", 
+            "Zaginięcie", 
+            "Uszkodzenie");
 
-        item.Notes = await Shell.Current.DisplayPromptAsync("Notatka", "Powód:");
-        await _storageService.UpdateBox(CurrentBox!);
-        await RefreshCurrentBox(CurrentBox!.BoxCode);
+        if (action == "Edytuj ilość")
+        {
+            // Wywołujemy istniejącą logikę edycji
+            await EditQuantity(item);
+        }
+        else if (action == "Zaginięcie" || action == "Uszkodzenie")
+        {
+            item.IsMissing = (action == "Zaginięcie");
+            item.IsDamaged = (action == "Uszkodzenie");
+            item.IsFlagged = true;
+        
+            item.Notes = await Shell.Current.DisplayPromptAsync("Notatka", "Podaj powód:");
+        
+            await _storageService.UpdateBox(CurrentBox!);
+            await RefreshCurrentBox(CurrentBox!.BoxCode);
+            StatusMessage = $"Zgłoszono {action} dla {item.ProductName}";
+        }
     }
+
     [RelayCommand]
     private async Task StartVerification()
     {
@@ -165,7 +176,6 @@ public partial class SearchViewModel : ObservableObject
             return;
         }
     
-        // Tutaj Twoja logika kończąca weryfikację
         await Shell.Current.DisplayAlert("Sukces", "Weryfikacja zakończona", "OK");
     }
 }
