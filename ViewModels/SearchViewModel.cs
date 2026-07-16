@@ -49,7 +49,10 @@ public partial class SearchViewModel : ObservableObject
     private async Task AddProductAsync()
     {
         if (CurrentBox == null) return;
-        // Przekazujemy kod, aby MainPage wiedział, co otworzyć
+        
+        // USTAWIALNE TYLKO TU: Flaga weryfikacji
+        _navState.ShouldReturnToSearch = true; 
+        
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
     }
 

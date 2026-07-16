@@ -117,8 +117,8 @@ public partial class MainViewModel : ObservableObject
 
         if (CurrentBox != null) { StatusMessage = "Najpierw zamknij otwarty karton!"; return; }
 
-        var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode) ?? await _storageService.GetOrCreateBoxAsync(scannedCode);
-        CurrentBox = existingBox;
+        var box = await _storageService.GetBoxByCodeAsync(scannedCode) ?? await _storageService.GetOrCreateBoxAsync(scannedCode);
+        CurrentBox = box;
         CurrentBox.LoadAfterRead();
         CurrentBox.IsClosed = false;
         CurrentItems.Clear();
@@ -131,6 +131,7 @@ public partial class MainViewModel : ObservableObject
     public async Task SaveAndCloseAsync()
     {
         if (CurrentBox == null) return;
+        
         string codeToReturn = CurrentBox.BoxCode;
         CurrentBox.IsClosed = true;
         await SaveCurrentBoxInternal();
@@ -139,8 +140,16 @@ public partial class MainViewModel : ObservableObject
         CurrentBox = null; 
         CurrentItems.Clear();
         
-        // Zmieniony powrót: używamy parametru w URL, aby SearchViewModel wiedział, co odświeżyć
-        await Shell.Current.GoToAsync($"BoxSearchPage?ReloadBoxCode={codeToReturn}");
+        // Powrót następuje tylko, jeśli weszliśmy przez Weryfikację
+        if (_navState.ShouldReturnToSearch)
+        {
+            _navState.ShouldReturnToSearch = false; // Reset flagi
+            await Shell.Current.GoToAsync($"BoxSearchPage?ReloadBoxCode={codeToReturn}");
+        }
+        else
+        {
+            StatusMessage = "Karton zamknięty. Możesz kontynuować skanowanie.";
+        }
     }
 
     [RelayCommand]
