@@ -6,6 +6,7 @@ using MagazynApp.Model;
 
 namespace MagazynApp.ViewModels;
 
+[QueryProperty(nameof(ReloadBoxCode), "ReloadBoxCode")]
 public partial class SearchViewModel : ObservableObject
 {
     private readonly IStorageService _storageService;
@@ -13,12 +14,12 @@ public partial class SearchViewModel : ObservableObject
 
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć";
+    [ObservableProperty] private string? _reloadBoxCode;
+    [ObservableProperty] private bool _isVerificationMode;
 
     [ObservableProperty] 
     [NotifyPropertyChangedFor(nameof(IsEditable))]
     private Box? _currentBox;
-
-    [ObservableProperty] private bool _isVerificationMode;
 
     public ObservableCollection<string> RecentScans { get; } = new();
     public bool IsEditable => CurrentBox != null && CurrentBox.Status != "Wysłany";
@@ -29,32 +30,39 @@ public partial class SearchViewModel : ObservableObject
         _navState = navState;
     }
 
+    partial void OnReloadBoxCodeChanged(string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            RefreshCurrentBox(value);
+            ReloadBoxCode = null; 
+        }
+    }
+
+    private async void RefreshCurrentBox(string boxCode)
+    {
+        var updatedBox = await _storageService.GetBoxByCodeAsync(boxCode);
+        if (updatedBox != null) CurrentBox = updatedBox;
+    }
+
     [RelayCommand]
     private async Task AddProductAsync()
     {
         if (CurrentBox == null) return;
-
-        var navigationParameter = new Dictionary<string, object>
-        {
-            { "BoxCode", CurrentBox.BoxCode },
-            { "IsEditing", "true" } // Dodajemy flagę
-        };
-
-        await Shell.Current.GoToAsync(nameof(MainPage), navigationParameter);
+        // Przekazujemy kod, aby MainPage wiedział, co otworzyć
+        await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
     }
+
     [RelayCommand]
     private async Task ProcessScanAsync()
     {
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
-
         string codeToSearch = ScanInput.Trim();
         ScanInput = string.Empty;
 
         var box = await _storageService.GetBoxByCodeAsync(codeToSearch);
-
         if (box == null)
         {
-            StatusMessage = "Karton nie istnieje w bazie.";
             await Shell.Current.DisplayAlert("Brak", "Karton nie istnieje w bazie.", "OK");
             return;
         }
@@ -66,20 +74,19 @@ public partial class SearchViewModel : ObservableObject
         CurrentBox = box;
         StatusMessage = $"Otwarto karton: {codeToSearch}";
     }
+
     [RelayCommand]
     private async Task EditQuantity(Item item)
     {
         if (!IsEditable) return;
-
-        string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość",
-            initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
-
+        string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
         if (int.TryParse(result, out int newQty))
         {
             int oldQty = item.Quantity;
             item.Quantity = newQty;
             await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
             await _storageService.UpdateBox(CurrentBox);
+            RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
 
@@ -87,29 +94,12 @@ public partial class SearchViewModel : ObservableObject
     private async Task ReportIssue(Item item)
     {
         string action = await Shell.Current.DisplayActionSheet("Rozbieżność", "Anuluj", null, "Zaginięcie", "Uszkodzenie");
-
         if (action == "Zaginięcie") item.IsMissing = true;
         else if (action == "Uszkodzenie") item.IsDamaged = true;
         else return;
 
         item.Notes = await Shell.Current.DisplayPromptAsync("Notatka", "Powód:");
         await _storageService.UpdateBox(CurrentBox!);
-    }
-    [RelayCommand]
-    private async Task SaveAndReturnToMainAsync()
-    {
-        if (CurrentBox == null) return;
-
-        // Opcjonalnie: zapisz zmiany w bazie przed przejściem
-        await _storageService.UpdateBox(CurrentBox);
-
-        // Przekazujemy ten sam kod kartonu, żeby MainPage wiedziało co załadować
-        var navigationParameter = new Dictionary<string, object>
-        {
-            { "BoxCode", CurrentBox.BoxCode }
-        };
-
-        // Nawigacja "do przodu" do MainPage
-        await Shell.Current.GoToAsync($"{nameof(MainPage)}", navigationParameter);
+        RefreshCurrentBox(CurrentBox!.BoxCode);
     }
 }

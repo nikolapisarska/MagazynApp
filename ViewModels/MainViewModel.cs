@@ -8,30 +8,21 @@ using CommunityToolkit.Mvvm.Input;
 namespace MagazynApp.ViewModels;
 
 [QueryProperty(nameof(BoxCodeToLoad), "BoxCode")]
-[QueryProperty(nameof(IsEditingParam), "IsEditing")]
 public partial class MainViewModel : ObservableObject
 {
     private readonly IStorageService _storageService;
     private readonly NavigationState _navState;
-    private bool _isCurrentlyEditing = false;
 
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
     [ObservableProperty] private Product? _foundProduct;
     [ObservableProperty] private string? _boxCodeToLoad;
-    [ObservableProperty] private string? _isEditingParam;
 
     private Box? _currentBox;
     public Box? CurrentBox 
     {
         get => _currentBox;
-        set 
-        {
-            if (SetProperty(ref _currentBox, value))
-            {
-                OnPropertyChanged(nameof(IsBoxOpen));
-            }
-        }
+        set { if (SetProperty(ref _currentBox, value)) OnPropertyChanged(nameof(IsBoxOpen)); }
     }
 
     public bool IsBoxOpen => CurrentBox != null;
@@ -44,28 +35,55 @@ public partial class MainViewModel : ObservableObject
         _navState = navState;
     }
 
-    partial void OnIsEditingParamChanged(string? value)
-    {
-        _isCurrentlyEditing = (value == "true");
-        IsEditingParam = null; // Resetujemy parametr po odczytaniu
-    }
-
     partial void OnBoxCodeToLoadChanged(string? value)
     {
         if (!string.IsNullOrEmpty(value))
         {
             LoadBoxByCode(value);
-            BoxCodeToLoad = null; // Resetujemy parametr
+            BoxCodeToLoad = null;
         }
     }
 
     [RelayCommand]
-    private async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
+    private async Task ExportDataAsync()
+    {
+        try
+        {
+            string action = await Shell.Current.DisplayActionSheet("Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
+            if (action == "Anuluj") return;
+
+            string json = action == "Produkty" ? JsonSerializer.Serialize(await _storageService.GetProductsAsync()) : JsonSerializer.Serialize(await _storageService.GetBoxesAsync());
+            string fileName = $"{action}_{DateTime.Now:yyyyMMddHHmm}.json";
+            string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
+            await File.WriteAllTextAsync(filePath, json);
+            await Share.Default.RequestAsync(new ShareFileRequest { Title = $"Eksport: {action}", File = new ShareFile(filePath) });
+        }
+        catch (Exception ex) { await Shell.Current.DisplayAlert("Błąd", ex.Message, "OK"); }
+    }
+
+    [RelayCommand]
+    private async Task ImportDataAsync()
+    {
+        try
+        {
+            string action = await Shell.Current.DisplayActionSheet("Co importujesz?", "Anuluj", null, "Produkty", "Kartony");
+            if (action == "Anuluj") return;
+            var result = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Wybierz plik JSON" });
+            if (result == null) return;
+            string jsonContent = await File.ReadAllTextAsync(result.FullPath);
+            if (action == "Produkty") await _storageService.SaveProductsAsync(JsonSerializer.Deserialize<List<Product>>(jsonContent) ?? new());
+            else await _storageService.SaveBoxesAsync(JsonSerializer.Deserialize<List<Box>>(jsonContent) ?? new());
+            await Shell.Current.DisplayAlert("Sukces", "Dane zaimportowane.", "OK");
+        }
+        catch (Exception ex) { await Shell.Current.DisplayAlert("Błąd", ex.Message, "OK"); }
+    }
+
+    [RelayCommand]
+    public async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
 
     public async Task ExecuteProcessScanAsync()
     {
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
-
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty;
 
@@ -83,7 +101,6 @@ public partial class MainViewModel : ObservableObject
                     CurrentItems.Add(newItem);
                     CurrentBox.Items.Add(newItem);
                     UpdateListIndices();
-                    OnPropertyChanged(nameof(CurrentItems));
                 }
                 await SaveCurrentBoxInternal();
                 StatusMessage = $"Dodano: {product.Name}";
@@ -100,62 +117,30 @@ public partial class MainViewModel : ObservableObject
 
         if (CurrentBox != null) { StatusMessage = "Najpierw zamknij otwarty karton!"; return; }
 
-        var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
-        if (existingBox != null)
-        {
-            CurrentBox = existingBox;
-            CurrentBox.LoadAfterRead();
-            CurrentBox.IsClosed = false;
-            CurrentItems.Clear();
-            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
-            UpdateListIndices();
-            FoundClosedBoxes.Clear();
-            StatusMessage = $"Otwarto karton: {scannedCode}.";
-            
-            _navState.ShouldReturnToSearch = true;
-            await Shell.Current.GoToAsync(nameof(MainPage)); 
-            return; 
-        }
-        else
-        {
-            CurrentBox = await _storageService.GetOrCreateBoxAsync(scannedCode);
-            CurrentBox.IsClosed = false;
-            await _storageService.SaveBoxAsync(CurrentBox);
-            CurrentItems.Clear();
-            UpdateListIndices();
-            StatusMessage = $"Utworzono nowy karton: {scannedCode}.";
-            _navState.ShouldReturnToSearch = true;
-        }
+        var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode) ?? await _storageService.GetOrCreateBoxAsync(scannedCode);
+        CurrentBox = existingBox;
+        CurrentBox.LoadAfterRead();
+        CurrentBox.IsClosed = false;
+        CurrentItems.Clear();
+        foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
+        UpdateListIndices();
+        StatusMessage = $"Otwarto karton: {scannedCode}.";
     }
 
     [RelayCommand]
     public async Task SaveAndCloseAsync()
     {
         if (CurrentBox == null) return;
-
-        if (_isCurrentlyEditing)
-        {
-            await SaveCurrentBoxInternal();
-            StatusMessage = $"Zapisano zmiany w: {CurrentBox.BoxCode}";
-            CurrentBox = null;
-            CurrentItems.Clear();
-            _isCurrentlyEditing = false;
-            await Shell.Current.GoToAsync("..");
-        }
-        else
-        {
-            CurrentBox.IsClosed = true;
-            await SaveCurrentBoxInternal();
-            StatusMessage = $"Karton {CurrentBox.BoxCode} zamknięty.";
-            CurrentBox = null; 
-            CurrentItems.Clear();
+        string codeToReturn = CurrentBox.BoxCode;
+        CurrentBox.IsClosed = true;
+        await SaveCurrentBoxInternal();
         
-            if (_navState.ShouldReturnToSearch)
-            {
-                _navState.ShouldReturnToSearch = false;
-                await Shell.Current.GoToAsync(".."); 
-            }
-        }
+        StatusMessage = $"Karton {codeToReturn} zamknięty.";
+        CurrentBox = null; 
+        CurrentItems.Clear();
+        
+        // Zmieniony powrót: używamy parametru w URL, aby SearchViewModel wiedział, co odświeżyć
+        await Shell.Current.GoToAsync($"BoxSearchPage?ReloadBoxCode={codeToReturn}");
     }
 
     [RelayCommand]
@@ -194,15 +179,12 @@ public partial class MainViewModel : ObservableObject
             CurrentBox = box;
             CurrentBox.LoadAfterRead();
             CurrentBox.IsClosed = false;
-        
             CurrentItems.Clear();
-            foreach (var item in CurrentBox.Items) 
-                CurrentItems.Add(item);
-            
+            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
             UpdateListIndices();
             StatusMessage = $"Otwarto karton: {boxCode}";
         }
     }
 
-    public async Task InitializeLocalDatabaseAsync() => await _storageService.InitializeAsync(); 
+    public async Task InitializeLocalDatabaseAsync() => await _storageService.InitializeAsync();
 }
