@@ -25,6 +25,8 @@ public static class MauiProgram
         builder.Services.AddTransient<SearchViewModel>();
         builder.Services.AddSingleton<DashboardPage>();
         builder.Services.AddSingleton<NavigationState>();
+        builder.Services.AddSingleton<MainViewModel>();
+        builder.Services.AddSingleton<NavigationState>(); // Też singleton
         
 #if DEBUG
         builder.Logging.AddDebug();

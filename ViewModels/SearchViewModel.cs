@@ -32,11 +32,16 @@ public partial class SearchViewModel : ObservableObject
     [RelayCommand]
     private async Task AddProductAsync()
     {
-        _navState.ShouldReturnToSearch = true;
-        // Używamy nameof, żeby pasowało do rejestracji w AppShell
-        await Shell.Current.GoToAsync(nameof(MainPage));
-    }
+        if (CurrentBox == null) return;
 
+        var navigationParameter = new Dictionary<string, object>
+        {
+            { "BoxCode", CurrentBox.BoxCode },
+            { "IsEditing", "true" } // Dodajemy flagę
+        };
+
+        await Shell.Current.GoToAsync(nameof(MainPage), navigationParameter);
+    }
     [RelayCommand]
     private async Task ProcessScanAsync()
     {
@@ -89,5 +94,22 @@ public partial class SearchViewModel : ObservableObject
 
         item.Notes = await Shell.Current.DisplayPromptAsync("Notatka", "Powód:");
         await _storageService.UpdateBox(CurrentBox!);
+    }
+    [RelayCommand]
+    private async Task SaveAndReturnToMainAsync()
+    {
+        if (CurrentBox == null) return;
+
+        // Opcjonalnie: zapisz zmiany w bazie przed przejściem
+        await _storageService.UpdateBox(CurrentBox);
+
+        // Przekazujemy ten sam kod kartonu, żeby MainPage wiedziało co załadować
+        var navigationParameter = new Dictionary<string, object>
+        {
+            { "BoxCode", CurrentBox.BoxCode }
+        };
+
+        // Nawigacja "do przodu" do MainPage
+        await Shell.Current.GoToAsync($"{nameof(MainPage)}", navigationParameter);
     }
 }
