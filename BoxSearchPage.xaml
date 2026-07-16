@@ -2,11 +2,17 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:MagazynApp.ViewModels"
+             xmlns:local="clr-namespace:MagazynApp" 
              x:Class="MagazynApp.BoxSearchPage"
              Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <local:BoolToTrueFalseConverter x:Key="TrueFalseConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
-    <!-- Dodane 5 rzędów siatki -->
+  
     <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
         
         <!-- 0. NAGŁÓWEK GŁÓWNY -->
@@ -23,9 +29,31 @@
                        PlaceholderColor="Gray"
                        TextColor="White" 
                        BackgroundColor="#424242" />
+            
+            <Label Text="{Binding StatusMessage}" 
+                   TextColor="Yellow" 
+                   FontSize="12" 
+                   HorizontalOptions="Center"/>
+
+            <!-- Wskaźnik trybu -->
+            <!-- ZMIEŃ TO NA PONIŻSZE: -->
+            <Label FontAttributes="Bold" HorizontalOptions="Center">
+                <Label.Style>
+                    <Style TargetType="Label">
+                        <Setter Property="Text" Value="TRYB: SKANOWANIE KARTONÓW" />
+                        <Setter Property="TextColor" Value="Gray" />
+                        <Style.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsVerificationMode}" Value="True">
+                                <Setter Property="Text" Value="TRYB: WERYFIKACJA PRODUKTÓW" />
+                                <Setter Property="TextColor" Value="Orange" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Label.Style>
+            </Label>
         </VerticalStackLayout>
 
-        <!-- 2. NAGŁÓWEK DETALI KARTONU (Widoczny jeśli karton jest zeskanowany) -->
+        <!-- 2. NAGŁÓWEK DETALI KARTONU -->
         <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="5" BackgroundColor="#2C2C2C">
             <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="22" FontAttributes="Bold" TextColor="White"/>
             <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" TextColor="#FFB300" FontAttributes="Bold"/>
@@ -38,24 +66,35 @@
 
         <!-- 3. LISTA PRODUKTÓW W KARTONIE -->
         <CollectionView Grid.Row="3" ItemsSource="{Binding CurrentBox.Items}">
-            <!-- Nagłówek Tabeli -->
             <CollectionView.Header>
                 <Grid Padding="10" ColumnDefinitions="*, 50, 50, 40" BackgroundColor="#1E1E1E" Margin="0,0,0,5">
                     <Label Text="Produkt / Nazwa" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
                     <Label Text="Sys" Grid.Column="1" HorizontalOptions="Center" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
                     <Label Text="Fakt" Grid.Column="2" HorizontalOptions="Center" FontAttributes="Bold" TextColor="#81C784" VerticalOptions="Center"/>
-                    <Label Text="Edycja" Grid.Column="3" HorizontalOptions="Center" FontAttributes="Bold" TextColor="Gray" FontSize="10" VerticalOptions="Center"/>
                 </Grid>
             </CollectionView.Header>
             
-            <!-- Elementy Tabeli -->
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Grid Padding="10" ColumnDefinitions="*, 50, 50, 40" BackgroundColor="#242424" Margin="0,2">
                         <Label Text="{Binding ProductName}" VerticalOptions="Center" TextColor="White" LineBreakMode="TailTruncation"/>
                         <Label Text="{Binding Quantity}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" TextColor="LightGray"/>
-                        <Label Text="{Binding ConfirmedQuantity}" Grid.Column="2" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" TextColor="#81C784"/>
-                        <!-- Przycisk edycji podłączony do RelatvieSource -->
+                        
+                        <Label Text="{Binding ConfirmedQuantity}" 
+                               Grid.Column="2" 
+                               FontAttributes="Bold" 
+                               HorizontalOptions="Center" 
+                               VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding ConfirmedQuantity}" Value="{Binding Quantity}">
+                                    <Setter Property="TextColor" Value="#81C784" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding ConfirmedQuantity}" Value="{x:Null}">
+                                    <Setter Property="TextColor" Value="#F44336" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        
                         <ImageButton Grid.Column="3" Source="edit_icon.png" WidthRequest="22" HeightRequest="22" BackgroundColor="Transparent" 
                                      Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=EditQuantityCommand}" 
                                      CommandParameter="{Binding .}"/>
@@ -64,16 +103,31 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <!-- 4. ACTION BAR (Dolny pasek narzędzi) -->
+        <!-- 4. ACTION BAR -->
         <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E">
-            
             <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
-                <Button Text="Dodaj Produkt" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
+                <Button Text="Edytuj" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
                 <Button Grid.Column="1" Text="Zgłoś Rozbieżność" Command="{Binding ReportIssueCommand}" BackgroundColor="#F44336" TextColor="White" FontAttributes="Bold"/>
             </Grid>
             
+            <!-- Przycisk przełączania trybu z Trigerem -->
+            <Button Command="{Binding ToggleVerificationModeCommand}" 
+                    TextColor="Black" FontAttributes="Bold" HeightRequest="50">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Text" Value="Włącz Tryb Weryfikacji" />
+                        <Setter Property="BackgroundColor" Value="#4CAF50" />
+                        <Style.Triggers>
+                            <DataTrigger TargetType="Button" Binding="{Binding IsVerificationMode}" Value="True">
+                                <Setter Property="Text" Value="Wyłącz Tryb Weryfikacji" />
+                                <Setter Property="BackgroundColor" Value="#F44336" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            
             <Button Text="Weryfikuj Zgodność" Command="{Binding StartVerificationCommand}" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50"/>
-        
         </VerticalStackLayout>
     </Grid>
 </ContentPage>

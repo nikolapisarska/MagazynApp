@@ -8,7 +8,7 @@ public partial class Item : ObservableObject
     public string ProductId { get; set; } = string.Empty;
     public string ProductSku { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty; // Zamiast zostawiać puste
-
+    public bool IsValid => Quantity == ConfirmedQuantity;
     [ObservableProperty] private int _quantity;
     [ObservableProperty] private int _confirmedQuantity;
     [ObservableProperty] private bool _isMissing;

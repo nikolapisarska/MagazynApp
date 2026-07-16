@@ -1,10 +1,13 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using MagazynApp.Services;
 using MagazynApp.Model;
 
 namespace MagazynApp.ViewModels;
+
+public class FocusScannerMessage { }
 
 [QueryProperty(nameof(ReloadBoxCode), "ReloadBoxCode")]
 public partial class SearchViewModel : ObservableObject
@@ -21,7 +24,7 @@ public partial class SearchViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsEditable))]
     private Box? _currentBox;
 
-    public ObservableCollection<string> RecentScans { get; } = new();
+    public ObservableCollection<string> RecentScans { get; private set; } = new();
     public bool IsEditable => CurrentBox != null && CurrentBox.Status != "Wysłany";
 
     public SearchViewModel(IStorageService storageService, NavigationState navState)
@@ -35,25 +38,55 @@ public partial class SearchViewModel : ObservableObject
         if (!string.IsNullOrEmpty(value))
         {
             RefreshCurrentBox(value);
-            ReloadBoxCode = null; 
+            ReloadBoxCode = null;
         }
     }
 
-    private async void RefreshCurrentBox(string boxCode)
+    private async Task RefreshCurrentBox(string boxCode)
     {
         var updatedBox = await _storageService.GetBoxByCodeAsync(boxCode);
-        if (updatedBox != null) CurrentBox = updatedBox;
+    
+        // Użyj MainThread.BeginInvokeOnMainThread, aby upewnić się, że to bezpieczne
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (updatedBox != null)
+            {
+                CurrentBox = updatedBox;
+                WeakReferenceMessenger.Default.Send(new FocusScannerMessage());
+            }
+        });
     }
-
     [RelayCommand]
     private async Task AddProductAsync()
     {
         if (CurrentBox == null) return;
-        
-        // USTAWIALNE TYLKO TU: Flaga weryfikacji
-        _navState.ShouldReturnToSearch = true; 
-        
+        _navState.ShouldReturnToSearch = true;
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
+    }
+
+    [RelayCommand]
+    private void ToggleVerificationMode()
+    {
+        IsVerificationMode = !IsVerificationMode;
+        StatusMessage = IsVerificationMode
+            ? "Tryb weryfikacji: Skanuj kody produktów."
+            : "Tryb standardowy: Skanuj kody kartonów.";
+    }
+
+    private void IncrementProductQuantity(string sku)
+    {
+        if (CurrentBox == null) return;
+
+        var item = CurrentBox.Items.FirstOrDefault(i => i.ProductSku == sku);
+        if (item != null)
+        {
+            item.ConfirmedQuantity++;
+            StatusMessage = $"Zwiększono {item.ProductName}: {item.ConfirmedQuantity}/{item.Quantity}";
+        }
+        else
+        {
+            StatusMessage = $"Błąd: Produkt {sku} nie istnieje w tym kartonie.";
+        }
     }
 
     [RelayCommand]
@@ -63,19 +96,37 @@ public partial class SearchViewModel : ObservableObject
         string codeToSearch = ScanInput.Trim();
         ScanInput = string.Empty;
 
-        var box = await _storageService.GetBoxByCodeAsync(codeToSearch);
-        if (box == null)
+        if (IsVerificationMode)
         {
-            await Shell.Current.DisplayAlert("Brak", "Karton nie istnieje w bazie.", "OK");
-            return;
+            if (CurrentBox == null)
+            {
+                StatusMessage = "Najpierw zeskanuj karton, aby wejść w tryb weryfikacji.";
+            }
+            else
+            {
+                IncrementProductQuantity(codeToSearch);
+                await _storageService.UpdateBox(CurrentBox);
+            }
+        }
+        else
+        {
+            var box = await _storageService.GetBoxByCodeAsync(codeToSearch);
+            if (box == null)
+            {
+                StatusMessage = $"Błąd: Karton {codeToSearch} nie istnieje.";
+            }
+            else
+            {
+                CurrentBox = box;
+                StatusMessage = $"Otwarto karton: {codeToSearch}";
+
+                if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
+                RecentScans.Insert(0, codeToSearch);
+                while (RecentScans.Count > 5) RecentScans.RemoveAt(5);
+            }
         }
 
-        if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
-        RecentScans.Insert(0, codeToSearch);
-        while (RecentScans.Count > 5) RecentScans.RemoveAt(5);
-
-        CurrentBox = box;
-        StatusMessage = $"Otwarto karton: {codeToSearch}";
+        WeakReferenceMessenger.Default.Send(new FocusScannerMessage());
     }
 
     [RelayCommand]
@@ -89,20 +140,32 @@ public partial class SearchViewModel : ObservableObject
             item.Quantity = newQty;
             await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
             await _storageService.UpdateBox(CurrentBox);
-            RefreshCurrentBox(CurrentBox.BoxCode);
+            await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
 
     [RelayCommand]
     private async Task ReportIssue(Item item)
     {
-        string action = await Shell.Current.DisplayActionSheet("Rozbieżność", "Anuluj", null, "Zaginięcie", "Uszkodzenie");
+        string? action = await Shell.Current.DisplayActionSheetAsync("Rozbieżność", "Anuluj", null, "Zaginięcie", "Uszkodzenie");
         if (action == "Zaginięcie") item.IsMissing = true;
         else if (action == "Uszkodzenie") item.IsDamaged = true;
         else return;
 
         item.Notes = await Shell.Current.DisplayPromptAsync("Notatka", "Powód:");
         await _storageService.UpdateBox(CurrentBox!);
-        RefreshCurrentBox(CurrentBox!.BoxCode);
+        await RefreshCurrentBox(CurrentBox!.BoxCode);
+    }
+    [RelayCommand]
+    private async Task StartVerification()
+    {
+        if (CurrentBox == null)
+        {
+            await Shell.Current.DisplayAlert("Błąd", "Brak otwartego kartonu do weryfikacji.", "OK");
+            return;
+        }
+    
+        // Tutaj Twoja logika kończąca weryfikację
+        await Shell.Current.DisplayAlert("Sukces", "Weryfikacja zakończona", "OK");
     }
 }
