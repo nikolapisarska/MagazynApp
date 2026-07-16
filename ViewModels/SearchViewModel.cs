@@ -4,7 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MagazynApp.Services;
 using MagazynApp.Model;
-
+using CommunityToolkit.Maui.Views; 
+using MagazynApp.Views;
 namespace MagazynApp.ViewModels;
 
 public class FocusScannerMessage { }
@@ -176,10 +177,12 @@ public partial class SearchViewModel : ObservableObject
     {
         if (CurrentBox == null)
         {
-            await Shell.Current.DisplayAlert("Błąd", "Brak otwartego kartonu do weryfikacji.", "OK");
+            await Shell.Current.DisplayAlert("Błąd", "Brak otwartego kartonu.", "OK");
             return;
         }
-    
-        await Shell.Current.DisplayAlert("Sukces", "Weryfikacja zakończona", "OK");
+
+        // Wywołanie popupa
+        var popup = new VerificationSummaryPopup(CurrentBox);
+        await Shell.Current.CurrentPage.ShowPopupAsync(popup);
     }
 }

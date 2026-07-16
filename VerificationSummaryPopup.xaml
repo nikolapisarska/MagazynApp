@@ -1,0 +1,23 @@
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+               x:Class="MagazynApp.Views.VerificationSummaryPopup"
+               Size="500,650">
+    <VerticalStackLayout BackgroundColor="White" Padding="20">
+        <Label Text="Podsumowanie Weryfikacji" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>
+        
+        <CollectionView ItemsSource="{Binding Items}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <VerticalStackLayout Margin="0,5">
+                        <Label Text="{Binding ProductName}" FontAttributes="Bold"/>
+                        <Label Text="{Binding StatusLabel}" FontSize="12"/>
+                        <Label Text="{Binding Notes, StringFormat='Notatka: {0}'}" FontSize="10" TextColor="Gray"/>
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        
+        <Button Text="Zamknij" Clicked="OnCloseClicked" Margin="0,20,0,0"/>
+    </VerticalStackLayout>
+</toolkit:Popup>
