@@ -147,4 +147,5 @@ public class StorageService : IStorageService
         // Jeśli nie musisz nic robić, zostaw po prostu:
         await Task.CompletedTask; 
     }
+    
 }

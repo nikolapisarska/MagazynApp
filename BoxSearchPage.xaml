@@ -2,19 +2,16 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:MagazynApp.ViewModels"
-             xmlns:local="clr-namespace:MagazynApp" 
              x:Class="MagazynApp.BoxSearchPage"
              Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
 
     <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
         
-        <!-- 0. NAGŁÓWEK -->
         <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
             <Label Text="Centrum Operacyjne" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
 
-        <!-- 1. SCANNER -->
         <VerticalStackLayout Grid.Row="1" Padding="15" Spacing="8">
             <SearchBar x:Name="ScanEntry"
                        Text="{Binding ScanInput}"
@@ -23,49 +20,59 @@
                        PlaceholderColor="Gray"
                        TextColor="White" 
                        BackgroundColor="#424242" />
-            
             <Label Text="{Binding StatusMessage}" TextColor="Yellow" FontSize="12" HorizontalOptions="Center"/>
         </VerticalStackLayout>
 
-        <!-- 2. DETALE KARTONU -->
         <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="5" BackgroundColor="#2C2C2C">
             <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="22" FontAttributes="Bold" TextColor="White"/>
             <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" TextColor="#FFB300" FontAttributes="Bold"/>
         </VerticalStackLayout>
 
-        <!-- 3. LISTA PRODUKTÓW -->
         <CollectionView Grid.Row="3" ItemsSource="{Binding CurrentBox.Items}">
             <CollectionView.Header>
-                <Grid Padding="10" ColumnDefinitions="*, 40, 40" BackgroundColor="#1E1E1E" Margin="0,0,0,5">
+                <Grid Padding="10" ColumnDefinitions="*, 80" BackgroundColor="#1E1E1E" Margin="0,0,0,5">
                     <Label Text="Produkt" FontAttributes="Bold" TextColor="White"/>
                     <Label Text="Stan" Grid.Column="1" HorizontalOptions="Center" FontAttributes="Bold" TextColor="White"/>
                 </Grid>
             </CollectionView.Header>
             
             <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Padding="25" ColumnDefinitions="*, 60" BackgroundColor="#242424" Margin="0,2">
-                            <!-- Cały wiersz jest klikalny i otwiera pełne menu -->
-                            <Grid.GestureRecognizers>
-                                <TapGestureRecognizer 
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=OpenIssuePopupCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </Grid.GestureRecognizers>
-            
-                            <Grid.Triggers>
-                                <DataTrigger TargetType="Grid" Binding="{Binding IsFlagged}" Value="True">
-                                    <Setter Property="BackgroundColor" Value="#4A1414" />
-                                </DataTrigger>
-                            </Grid.Triggers>
+                <DataTemplate>
+                    <Grid Padding="15" ColumnDefinitions="*, 100" BackgroundColor="#242424" Margin="0,2">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer 
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SearchViewModel}}, Path=OpenIssuePopupCommand}"
+                                CommandParameter="{Binding .}" />
+                        </Grid.GestureRecognizers>
 
-                            <Label Text="{Binding ProductName}" VerticalOptions="Center" TextColor="White" LineBreakMode="TailTruncation"/>
-                            <Label Text="{Binding Quantity}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" TextColor="LightGray"/>
-                        </Grid>
-                    </DataTemplate>
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="{Binding ProductName}" TextColor="White" FontAttributes="Bold"/>
+                            <Label Text="{Binding StatusLabel}" 
+                                   TextColor="{Binding StatusColor}" 
+                                   FontSize="11" 
+                                   FontAttributes="Italic"/>
+                        </VerticalStackLayout>
+
+                        <Label Grid.Column="1" 
+                               HorizontalOptions="End" 
+                               VerticalOptions="Center" 
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               Text="{Binding ExpectedVsConfirmed}"> <!-- TUTAJ JEST ZMIANA -->
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsFlagged}" Value="True">
+                                    <Setter Property="TextColor" Value="Orange" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsFlagged}" Value="False">
+                                    <Setter Property="TextColor" Value="White" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Grid>
+                </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <!-- 4. ACTION BAR -->
         <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E">
             <Button Text="Dodaj Produkt" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
             <Button Text="Weryfikuj Zgodność" Command="{Binding StartVerificationCommand}" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50"/>

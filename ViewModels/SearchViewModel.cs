@@ -125,6 +125,7 @@ public partial class SearchViewModel : ObservableObject
     {
         if (!IsEditable) return;
         string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
+        
         if (int.TryParse(result, out int newQty))
         {
             int oldQty = item.Quantity;
@@ -135,38 +136,41 @@ public partial class SearchViewModel : ObservableObject
         }
     }
 
-    // Nowa metoda obsługująca kliknięcie w wiersz
     [RelayCommand]
     private async Task OpenIssuePopup(Item item)
     {
-        // Dodajemy "Edytuj ilość" do listy opcji
+        if (!IsEditable) return;
+
         string? action = await Shell.Current.DisplayActionSheetAsync(
-            $"Produkt: {item.ProductName}", 
-            "Anuluj", 
-            null, 
-            "Edytuj ilość", 
-            "Zaginięcie", 
-            "Uszkodzenie");
+            $"Produkt: {item.ProductName}", "Anuluj", null, "Edytuj ilość", "Zgłoś braki", "Zgłoś uszkodzenie");
 
         if (action == "Edytuj ilość")
         {
-            // Wywołujemy istniejącą logikę edycji
-            await EditQuantity(item);
+            string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
+            if (int.TryParse(result, out int newQty))
+            {
+                item.Quantity = newQty;
+                await _storageService.UpdateBox(CurrentBox!);
+                // RefreshProperties wywoła się automatycznie przez OnQuantityChanged
+            }
         }
-        else if (action == "Zaginięcie" || action == "Uszkodzenie")
+        else if (action == "Zgłoś braki" || action == "Zgłoś uszkodzenie")
         {
-            item.IsMissing = (action == "Zaginięcie");
-            item.IsDamaged = (action == "Uszkodzenie");
-            item.IsFlagged = true;
-        
-            item.Notes = await Shell.Current.DisplayPromptAsync("Notatka", "Podaj powód:");
-        
-            await _storageService.UpdateBox(CurrentBox!);
-            await RefreshCurrentBox(CurrentBox!.BoxCode);
-            StatusMessage = $"Zgłoszono {action} dla {item.ProductName}";
+            string? result = await Shell.Current.DisplayPromptAsync(action, "Podaj ilość:", keyboard: Keyboard.Numeric);
+            if (int.TryParse(result, out int qty) && qty > 0)
+            {
+                if (action == "Zgłoś braki") item.MissingQty += qty;
+                else item.DamagedQty += qty;
+
+                item.IsFlagged = true;
+                await _storageService.UpdateBox(CurrentBox!);
+            
+                // Ręczne wymuszenie odświeżenia UI dla tego konkretnego wiersza
+                item.RefreshProperties(); 
+                StatusMessage = $"Zgłoszono {qty} szt. ({action.ToLower()}) dla {item.ProductName}";
+            }
         }
     }
-
     [RelayCommand]
     private async Task StartVerification()
     {
