@@ -16,8 +16,13 @@ public partial class Box : ObservableObject
     
     public string ItemsJson { get; set; } = "[]";
 
-    [Ignore] public List<Item> Items { get; set; } = new();
-
+    [Ignore] 
+    public List<Item> Items { get; set; } = new();
+    
+    public void SyncItems() 
+    {
+        ItemsJson = JsonSerializer.Serialize(Items);
+    }
     public void LoadAfterRead() => Items = JsonSerializer.Deserialize<List<Item>>(ItemsJson) ?? new();
     public void PrepareForSave() => ItemsJson = JsonSerializer.Serialize(Items);
 }

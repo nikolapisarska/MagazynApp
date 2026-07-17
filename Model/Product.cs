@@ -9,8 +9,8 @@ public class Product
     public string Name { get; set; } = string.Empty;
     public string CodeOrIdGraffiti { get; set; } = string.Empty;
   
-    public  string Quantity { get; set; } = string.Empty;
+    public int DefaultQuantity { get; set; } = 1;
     
-    [Ignore] // Nie mapujemy tego do bazy
+    [Ignore]
     public int Lp { get; set; } 
 }

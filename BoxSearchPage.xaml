@@ -52,10 +52,7 @@
                                    FontSize="11" 
                                    FontAttributes="Italic"/>
                             <!-- Wyświetlanie notatki -->
-                            <Label Text="{Binding Notes, StringFormat='Uwagi: {0}'}" 
-                                   TextColor="Gray" 
-                                   FontSize="10" 
-                                   IsVisible="{Binding HasNotes}"/>
+                         
                         </VerticalStackLayout>
 
                         <Label Grid.Column="1" 

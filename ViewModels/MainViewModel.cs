@@ -196,4 +196,52 @@ public partial class MainViewModel : ObservableObject
     }
 
     public async Task InitializeLocalDatabaseAsync() => await _storageService.InitializeAsync();
+    [RelayCommand]
+    private async Task ImportItemsToBoxAsync()
+    {
+        if (CurrentBox == null)
+        {
+            await Shell.Current.DisplayAlert("Błąd", "Najpierw otwórz karton!", "OK");
+            return;
+        }
+
+        try
+        {
+            var result = await FilePicker.Default.PickAsync(new PickOptions { 
+                PickerTitle = "Wybierz plik z listą produktów (JSON)" 
+            });
+        
+            if (result == null) return;
+
+            string jsonContent = await File.ReadAllTextAsync(result.FullPath);
+            var importedItems = JsonSerializer.Deserialize<List<Item>>(jsonContent);
+
+            if (importedItems != null)
+            {
+                foreach (var importedItem in importedItems)
+                {
+                    var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == importedItem.ProductSku);
+                    if (existingItem != null)
+                    {
+                        // Jeśli produkt istnieje, zwiększ ilość
+                        existingItem.Quantity += importedItem.Quantity;
+                    }
+                    else
+                    {
+                        // Jeśli nie ma, dodaj nowy
+                        CurrentItems.Add(importedItem);
+                    }
+                }
+            
+                UpdateListIndices();
+                await SaveCurrentBoxInternal();
+                await Shell.Current.DisplayAlert("Sukces", "Produkty zostały zaimportowane.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Błąd importu", ex.Message, "OK");
+        }
+    }
+    
 }

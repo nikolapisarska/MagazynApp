@@ -1,28 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
 <toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
                x:Class="MagazynApp.Views.VerificationSummaryPopup"
-               Size="500,800">
-    <VerticalStackLayout BackgroundColor="White" Padding="20">
-        <Label Text="Podsumowanie Weryfikacji" FontSize="20" FontAttributes="Bold" Margin="0,0,0,10"/>
+               Color="Transparent">
+
+    <!-- Kontener z zaokrąglonymi rogami -->
+    <Border BackgroundColor="#F5F5F5" 
+            StrokeShape="RoundRectangle 20" 
+            StrokeThickness="0"
+            WidthRequest="400" 
+            HeightRequest="700" 
+            Padding="0">
         
-        <CollectionView ItemsSource="{Binding Items}">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <VerticalStackLayout Margin="0,5">
-                        <Label Text="{Binding ProductName}" FontAttributes="Bold"/>
-                        <Label Text="{Binding StatusLabel}" FontSize="12"/>
-                        <Label Text="{Binding Notes, StringFormat='Notatka: {0}'}" FontSize="10" TextColor="Gray"/>
-                    </VerticalStackLayout>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
-        
-        <Button Text="Zamknij" Clicked="OnCloseClicked" Margin="0,20,0,0"/> 
-        <Button Text="Generuj PDF" 
-                Command="{Binding StorageService}" 
-                BackgroundColor="#2196F3" 
-                TextColor="White"/>
-    </VerticalStackLayout>
-  
+        <Grid RowDefinitions="Auto, *, Auto">
+            <!-- Nagłówek -->
+            <BoxView Grid.Row="0" Color="#1E1E1E" HeightRequest="60" VerticalOptions="Start"/>
+            <Label Grid.Row="0" Text="Podsumowanie Weryfikacji" TextColor="White" 
+                   FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+
+            <!-- Lista produktów -->
+            <CollectionView Grid.Row="1" ItemsSource="{Binding Items}" Margin="15">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="0,5" Padding="10" CornerRadius="8" HasShadow="False" BorderColor="#DDD">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="16"/>
+                                <Label Text="{Binding StatusLabel}" FontSize="13" TextColor="{Binding StatusColor}"/>
+                                <Label Text="{Binding Notes, StringFormat='Uwagi: {0}'}" 
+                                       FontSize="12" TextColor="Gray" FontAttributes="Italic"
+                                       IsVisible="{Binding HasNotes}"/>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Stopka z przyciskami -->
+            <HorizontalStackLayout Grid.Row="2" Spacing="10" Padding="20" HorizontalOptions="Center">
+                <Button Text="Zamknij" Clicked="OnCloseClicked" WidthRequest="150" BackgroundColor="#E0E0E0"/>
+                <Button Text="Generuj PDF" Command="{Binding GeneratePdfCommand}" 
+                        WidthRequest="150" BackgroundColor="#4CAF50" TextColor="White"/>
+            </HorizontalStackLayout>
+        </Grid>
+    </Border>
 </toolkit:Popup>

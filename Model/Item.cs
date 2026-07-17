@@ -22,27 +22,23 @@ public partial class Item : ObservableObject
     [Ignore] public bool IsEven { get; set; }
 
     // Właściwości obliczeniowe
-[Ignore] public string ExpectedVsConfirmed => $"{Quantity - MissingQty - DamagedQty} / {Quantity}";
-    [Ignore] public int RemainingToScan => Quantity - MissingQty - DamagedQty;
+    [Ignore] public string ExpectedVsConfirmed => $"{ConfirmedQuantity} / {Quantity}";
+    
+    [Ignore] public int RemainingToScan => Math.Max(0, Quantity - ConfirmedQuantity);
 
     [Ignore]
     public string StatusLabel 
     {
-        get
+        get 
         {
-            var parts = new List<string>();
-            if (MissingQty > 0) parts.Add($"BRAK ({MissingQty})");
-            if (DamagedQty > 0) parts.Add($"USZK. ({DamagedQty})");
-            
-            if (parts.Count > 0)
-                return $"{string.Join(" / ", parts)} | Do znalezienia: {RemainingToScan}";
-            
-            return ConfirmedQuantity >= Quantity ? "KOMPLETNE" : "W TRAKCIE";
+            if (ConfirmedQuantity > Quantity) return "NADMIAR!";
+            if (MissingQty > 0 || DamagedQty > 0) return "PROBLEM ZGŁOSZONY";
+            return ConfirmedQuantity >= Quantity ? "KOMPLETNE" : $"POZOSTAŁO: {RemainingToScan}";
         }
     }
 
     [Ignore]
-    public Color StatusColor => (MissingQty > 0 || DamagedQty > 0)
+    public Color StatusColor => (ConfirmedQuantity > Quantity || MissingQty > 0 || DamagedQty > 0)
         ? Colors.Orange
         : (ConfirmedQuantity >= Quantity ? Colors.Green : Colors.White);
 
@@ -54,12 +50,12 @@ public partial class Item : ObservableObject
     partial void OnIsMissingChanged(bool value) => RefreshProperties();
     partial void OnIsDamagedChanged(bool value) => RefreshProperties();
     partial void OnNotesChanged(string value) => RefreshProperties();
+    
     public void RefreshProperties()
     {
         OnPropertyChanged(nameof(ExpectedVsConfirmed));
         OnPropertyChanged(nameof(RemainingToScan));
         OnPropertyChanged(nameof(StatusLabel));
         OnPropertyChanged(nameof(StatusColor));
-        OnPropertyChanged(nameof(Notes));
     }
 }
