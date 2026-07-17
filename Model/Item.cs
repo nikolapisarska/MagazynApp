@@ -53,12 +53,13 @@ public partial class Item : ObservableObject
     partial void OnDamagedQtyChanged(int value) => RefreshProperties();
     partial void OnIsMissingChanged(bool value) => RefreshProperties();
     partial void OnIsDamagedChanged(bool value) => RefreshProperties();
-
+    partial void OnNotesChanged(string value) => RefreshProperties();
     public void RefreshProperties()
     {
         OnPropertyChanged(nameof(ExpectedVsConfirmed));
         OnPropertyChanged(nameof(RemainingToScan));
         OnPropertyChanged(nameof(StatusLabel));
         OnPropertyChanged(nameof(StatusColor));
+        OnPropertyChanged(nameof(Notes));
     }
 }

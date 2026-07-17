@@ -51,6 +51,11 @@
                                    TextColor="{Binding StatusColor}" 
                                    FontSize="11" 
                                    FontAttributes="Italic"/>
+                            <!-- Wyświetlanie notatki -->
+                            <Label Text="{Binding Notes, StringFormat='Uwagi: {0}'}" 
+                                   TextColor="Gray" 
+                                   FontSize="10" 
+                                   IsVisible="{Binding HasNotes}"/>
                         </VerticalStackLayout>
 
                         <Label Grid.Column="1" 
@@ -58,7 +63,7 @@
                                VerticalOptions="Center" 
                                FontSize="16"
                                FontAttributes="Bold"
-                               Text="{Binding ExpectedVsConfirmed}"> <!-- TUTAJ JEST ZMIANA -->
+                               Text="{Binding ExpectedVsConfirmed}">
                             <Label.Triggers>
                                 <DataTrigger TargetType="Label" Binding="{Binding IsFlagged}" Value="True">
                                     <Setter Property="TextColor" Value="Orange" />

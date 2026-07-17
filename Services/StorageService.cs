@@ -1,6 +1,8 @@
 using MagazynApp.Model;
 using SQLite;
-
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 namespace MagazynApp.Services;
 
 public class StorageService : IStorageService
@@ -147,5 +149,47 @@ public class StorageService : IStorageService
         // Jeśli nie musisz nic robić, zostaw po prostu:
         await Task.CompletedTask; 
     }
+    public async Task GenerateBoxReport(Box box)
+    {
+        // Ustawienie licencji (dla społeczności/testów)
+        QuestPDF.Settings.License = LicenseType.Community;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Header().Text($"Raport Kartonu: {box.BoxCode}").FontSize(20).Bold();
+                page.Content().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(100);
+                        columns.RelativeColumn();
+                        columns.ConstantColumn(60);
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Text("Produkt");
+                        header.Cell().Text("Status");
+                        header.Cell().Text("Ilość");
+                    });
+
+                    foreach (var item in box.Items)
+                    {
+                        table.Cell().Text(item.ProductName);
+                        table.Cell().Text(item.StatusLabel);
+                        table.Cell().Text(item.ExpectedVsConfirmed);
+                    }
+                });
+                page.Footer().Text(x => { x.Span("Strona "); x.CurrentPageNumber(); });
+            });
+        });
+
+        // Zapis do pliku
+        string path = Path.Combine(FileSystem.AppDataDirectory, $"{box.BoxCode}_Raport.pdf");
+        document.GeneratePdf(path);
     
+        await Shell.Current.DisplayAlert("Sukces", $"Raport PDF wygenerowany: {path}", "OK");
+    }
 }

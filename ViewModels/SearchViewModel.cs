@@ -80,7 +80,6 @@ public partial class SearchViewModel : ObservableObject
             StatusMessage = $"Błąd: Produkt {sku} nie istnieje w tym kartonie.";
         }
     }
-
     [RelayCommand]
     private async Task ProcessScanAsync()
     {
@@ -143,16 +142,26 @@ public partial class SearchViewModel : ObservableObject
         if (!IsEditable) return;
 
         string? action = await Shell.Current.DisplayActionSheetAsync(
-            $"Produkt: {item.ProductName}", "Anuluj", null, "Edytuj ilość", "Zgłoś braki", "Zgłoś uszkodzenie");
+            $"Produkt: {item.ProductName}", "Anuluj", null, 
+            "Edytuj ilość", "Zgłoś braki", "Zgłoś uszkodzenie", "Dodaj/Edytuj notatkę", "Wyczyść zgłoszenia");
 
-        if (action == "Edytuj ilość")
+        if (action == "Dodaj/Edytuj notatkę")
+        {
+            string? note = await Shell.Current.DisplayPromptAsync("Notatka", "Wpisz uwagi:", initialValue: item.Notes);
+            if (note != null)
+            {
+                item.Notes = note;
+                item.IsFlagged = true;
+                await _storageService.UpdateBox(CurrentBox!);
+            }
+        }
+        else if (action == "Edytuj ilość")
         {
             string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
             if (int.TryParse(result, out int newQty))
             {
                 item.Quantity = newQty;
                 await _storageService.UpdateBox(CurrentBox!);
-                // RefreshProperties wywoła się automatycznie przez OnQuantityChanged
             }
         }
         else if (action == "Zgłoś braki" || action == "Zgłoś uszkodzenie")
@@ -160,16 +169,23 @@ public partial class SearchViewModel : ObservableObject
             string? result = await Shell.Current.DisplayPromptAsync(action, "Podaj ilość:", keyboard: Keyboard.Numeric);
             if (int.TryParse(result, out int qty) && qty > 0)
             {
+                int dostepne = item.Quantity - item.MissingQty - item.DamagedQty;
+                if (qty > dostepne) { await Shell.Current.DisplayAlert("Błąd", "Za duża ilość", "OK"); return; }
+                
                 if (action == "Zgłoś braki") item.MissingQty += qty;
                 else item.DamagedQty += qty;
 
                 item.IsFlagged = true;
                 await _storageService.UpdateBox(CurrentBox!);
-            
-                // Ręczne wymuszenie odświeżenia UI dla tego konkretnego wiersza
-                item.RefreshProperties(); 
-                StatusMessage = $"Zgłoszono {qty} szt. ({action.ToLower()}) dla {item.ProductName}";
             }
+        }
+        else if (action == "Wyczyść zgłoszenia")
+        {
+            item.MissingQty = 0;
+            item.DamagedQty = 0;
+            item.Notes = string.Empty;
+            item.IsFlagged = false;
+            await _storageService.UpdateBox(CurrentBox!);
         }
     }
     [RelayCommand]
