@@ -23,8 +23,10 @@ public partial class SearchViewModel : ObservableObject
 
     [ObservableProperty] 
     [NotifyPropertyChangedFor(nameof(IsEditable))]
+    [NotifyPropertyChangedFor(nameof(HasBoxLoaded))] // Dodaj to powiadomienie
     private Box? _currentBox;
 
+    public bool HasBoxLoaded => CurrentBox != null;
     public ObservableCollection<string> RecentScans { get; private set; } = new();
     public bool IsEditable => CurrentBox != null && CurrentBox.Status != "Wysłany";
 

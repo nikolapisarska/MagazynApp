@@ -8,10 +8,12 @@
 
     <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
         
+        <!-- Nagłówek (zawsze widoczny) -->
         <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
             <Label Text="Centrum Operacyjne" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
 
+        <!-- Wyszukiwarka i status (zawsze widoczne) -->
         <VerticalStackLayout Grid.Row="1" Padding="15" Spacing="8">
             <SearchBar x:Name="ScanEntry"
                        Text="{Binding ScanInput}"
@@ -23,12 +25,16 @@
             <Label Text="{Binding StatusMessage}" TextColor="Yellow" FontSize="12" HorizontalOptions="Center"/>
         </VerticalStackLayout>
 
-        <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="5" BackgroundColor="#2C2C2C">
+        <!-- Informacje o kartonie (widoczne tylko po załadowaniu) -->
+        <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="5" BackgroundColor="#2C2C2C"
+                             IsVisible="{Binding HasBoxLoaded}">
             <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="22" FontAttributes="Bold" TextColor="White"/>
             <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" TextColor="#FFB300" FontAttributes="Bold"/>
         </VerticalStackLayout>
 
-        <CollectionView Grid.Row="3" ItemsSource="{Binding CurrentBox.Items}">
+        <!-- Lista produktów w kartonie (widoczna tylko po załadowaniu) -->
+        <CollectionView Grid.Row="3" ItemsSource="{Binding CurrentBox.Items}"
+                        IsVisible="{Binding HasBoxLoaded}">
             <CollectionView.Header>
                 <Grid Padding="10" ColumnDefinitions="*, 80" BackgroundColor="#1E1E1E" Margin="0,0,0,5">
                     <Label Text="Produkt" FontAttributes="Bold" TextColor="White"/>
@@ -51,8 +57,6 @@
                                    TextColor="{Binding StatusColor}" 
                                    FontSize="11" 
                                    FontAttributes="Italic"/>
-                            <!-- Wyświetlanie notatki -->
-                         
                         </VerticalStackLayout>
 
                         <Label Grid.Column="1" 
@@ -75,9 +79,12 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E">
+        <!-- Dolny panel z przyciskami (widoczny tylko po załadowaniu) -->
+        <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E"
+                             IsVisible="{Binding HasBoxLoaded}">
             <Button Text="Dodaj Produkt" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
             <Button Text="Weryfikuj Zgodność" Command="{Binding StartVerificationCommand}" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50"/>
         </VerticalStackLayout>
+        
     </Grid>
 </ContentPage>
