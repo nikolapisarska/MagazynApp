@@ -66,10 +66,28 @@ public partial class SearchViewModel : ObservableObject
             if (updatedBox != null)
             {
                 CurrentBox = updatedBox;
+                SubscribeToItemsChanges(); // <--- Nasłuchiwanie zmian w produktach
                 NotifyStateChanged();
                 WeakReferenceMessenger.Default.Send(new FocusScannerMessage());
             }
         });
+    }
+
+    private void SubscribeToItemsChanges()
+    {
+        if (CurrentBox?.Items == null) return;
+
+        foreach (var item in CurrentBox.Items)
+        {
+            item.PropertyChanged -= Item_PropertyChanged;
+            item.PropertyChanged += Item_PropertyChanged;
+        }
+    }
+
+    private void Item_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Gdy zmienia się stan produktu (np. MissingQty, DamagedQty), przeliczamy CanCloseBox
+        OnPropertyChanged(nameof(CanCloseBox));
     }
 
     private void NotifyStateChanged()
@@ -119,7 +137,7 @@ public partial class SearchViewModel : ObservableObject
             {
                 IncrementProductQuantity(codeToSearch);
                 await _storageService.UpdateBox(CurrentBox);
-                NotifyStateChanged();
+                await RefreshCurrentBox(CurrentBox.BoxCode);
             }
         }
         else
@@ -132,6 +150,7 @@ public partial class SearchViewModel : ObservableObject
             else
             {
                 CurrentBox = box;
+                SubscribeToItemsChanges(); // <--- Podpięcie nasłuchiwania również przy bezpośrednim skanowaniu
                 StatusMessage = $"Otwarto karton: {codeToSearch}";
 
                 if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
@@ -155,12 +174,11 @@ public partial class SearchViewModel : ObservableObject
             item.Quantity = newQty;
             await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
             await _storageService.UpdateBox(CurrentBox);
-            NotifyStateChanged();
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
 
-    [RelayCommand]
+   [RelayCommand]
     private async Task OpenIssuePopup(Item item)
     {
         if (!IsEditable) return;
@@ -175,9 +193,12 @@ public partial class SearchViewModel : ObservableObject
             if (note != null)
             {
                 item.Notes = note;
-                item.IsFlagged = true;
+                item.IsFlagged = !string.IsNullOrEmpty(item.Notes) || item.MissingQty > 0 || item.DamagedQty > 0;
                 await _storageService.UpdateBox(CurrentBox!);
-                NotifyStateChanged();
+                
+                // Wymuś odświeżenie interfejsu i statusu przycisku
+                OnPropertyChanged(nameof(CanCloseBox));
+                await RefreshCurrentBox(CurrentBox!.BoxCode);
             }
         }
         else if (action == "Edytuj ilość")
@@ -187,7 +208,9 @@ public partial class SearchViewModel : ObservableObject
             {
                 item.Quantity = newQty;
                 await _storageService.UpdateBox(CurrentBox!);
-                NotifyStateChanged();
+                
+                OnPropertyChanged(nameof(CanCloseBox));
+                await RefreshCurrentBox(CurrentBox!.BoxCode);
             }
         }
         else if (action == "Zgłoś braki" || action == "Zgłoś uszkodzenie")
@@ -203,17 +226,36 @@ public partial class SearchViewModel : ObservableObject
 
                 item.IsFlagged = true;
                 await _storageService.UpdateBox(CurrentBox!);
-                NotifyStateChanged();
+                
+                OnPropertyChanged(nameof(CanCloseBox));
+                await RefreshCurrentBox(CurrentBox!.BoxCode);
             }
         }
         else if (action == "Wyczyść zgłoszenia")
         {
+            // Resetujemy wartości lokalnie w obiekcie
             item.MissingQty = 0;
             item.DamagedQty = 0;
             item.Notes = string.Empty;
             item.IsFlagged = false;
+
+            // Zapisujemy stan do bazy
             await _storageService.UpdateBox(CurrentBox!);
-            NotifyStateChanged();
+
+            // KLUCZOWE: Wymuszamy natychmiastowe przeliczenie CanCloseBox w wątku UI
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                OnPropertyChanged(nameof(CanCloseBox));
+            });
+
+            // Odświeżamy karton z bazy
+            await RefreshCurrentBox(CurrentBox!.BoxCode);
+            
+            // Jeszcze raz po odświeżeniu dla pewności
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                OnPropertyChanged(nameof(CanCloseBox));
+            });
         }
     }
 
@@ -250,7 +292,6 @@ public partial class SearchViewModel : ObservableObject
             StatusMessage = $"Karton {CurrentBox.BoxCode} został zamknięty.";
         
             await RefreshCurrentBox(CurrentBox.BoxCode);
-            NotifyStateChanged();
         }
     }
 }
