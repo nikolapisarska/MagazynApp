@@ -18,6 +18,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private Product? _foundProduct;
     [ObservableProperty] private string? _boxCodeToLoad;
 
+    // Dodana właściwość, która automatycznie steruje widocznością pola produktu
+    public bool IsProductVisible => FoundProduct != null;
+
     private Box? _currentBox;
     public Box? CurrentBox 
     {
@@ -33,6 +36,12 @@ public partial class MainViewModel : ObservableObject
     {
         _storageService = storageService;
         _navState = navState;
+    }
+
+    // Gdy zmienia się FoundProduct, informujemy interfejs, że IsProductVisible też się zmieniło
+    partial void OnFoundProductChanged(Product? value)
+    {
+        OnPropertyChanged(nameof(IsProductVisible));
     }
 
     partial void OnBoxCodeToLoadChanged(string? value)
@@ -124,6 +133,9 @@ public partial class MainViewModel : ObservableObject
         CurrentItems.Clear();
         foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
         UpdateListIndices();
+        
+        FoundProduct = null; // Czyszczenie znalezionego produktu po otwarciu kartonu
+        
         StatusMessage = $"Otwarto karton: {scannedCode}.";
     }
 
@@ -139,11 +151,11 @@ public partial class MainViewModel : ObservableObject
         StatusMessage = $"Karton {codeToReturn} zamknięty.";
         CurrentBox = null; 
         CurrentItems.Clear();
+        FoundProduct = null; // Czyszczenie przy zamknięciu
         
-        // Powrót następuje tylko, jeśli weszliśmy przez Weryfikację
         if (_navState.ShouldReturnToSearch)
         {
-            _navState.ShouldReturnToSearch = false; // Reset flagi
+            _navState.ShouldReturnToSearch = false; 
             await Shell.Current.GoToAsync($"BoxSearchPage?ReloadBoxCode={codeToReturn}");
         }
         else
@@ -191,11 +203,15 @@ public partial class MainViewModel : ObservableObject
             CurrentItems.Clear();
             foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
             UpdateListIndices();
+            
+            FoundProduct = null; // Czyszczenie produktu przy ładowaniu po kodzie
+            
             StatusMessage = $"Otwarto karton: {boxCode}";
         }
     }
 
     public async Task InitializeLocalDatabaseAsync() => await _storageService.InitializeAsync();
+    
     [RelayCommand]
     private async Task ImportItemsToBoxAsync()
     {
@@ -223,12 +239,10 @@ public partial class MainViewModel : ObservableObject
                     var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == importedItem.ProductSku);
                     if (existingItem != null)
                     {
-                        // Jeśli produkt istnieje, zwiększ ilość
                         existingItem.Quantity += importedItem.Quantity;
                     }
                     else
                     {
-                        // Jeśli nie ma, dodaj nowy
                         CurrentItems.Add(importedItem);
                     }
                 }
@@ -243,12 +257,12 @@ public partial class MainViewModel : ObservableObject
             await Shell.Current.DisplayAlert("Błąd importu", ex.Message, "OK");
         }
     }
+
     [RelayCommand]
     private async Task OpenBoxAsync(Box? box)
     {
         if (box == null) return;
 
-        // Jeśli masz otwarty inny karton, możesz opcjonalnie najpierw zapisać/zamknąć lub po prostu przełączyć
         var fullBox = await _storageService.GetBoxByCodeAsync(box.BoxCode);
         if (fullBox != null)
         {
@@ -258,11 +272,11 @@ public partial class MainViewModel : ObservableObject
             CurrentItems.Clear();
             foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
             UpdateListIndices();
+            
+            FoundProduct = null; // Czyszczenie produktu przy kliknięciu w karton z listy
+            
             StatusMessage = $"Otwarto karton: {box.BoxCode}";
-        
-            // Opcjonalnie: wyczyść listę znalezionych zamkniętych kartonów po otwarciu
             FoundClosedBoxes.Clear();
         }
     }
-    
 }

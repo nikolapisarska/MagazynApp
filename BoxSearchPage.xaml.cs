@@ -13,7 +13,7 @@ public partial class BoxSearchPage : ContentPage
         _viewModel = viewModel;
         BindingContext = _viewModel;
 
-        // Rejestracja wiadomości, która pozwoli ViewModelowi wymusić fokus
+        // Rejestracja wiadomości wymuszającej fokus z poziomu ViewModelu
         WeakReferenceMessenger.Default.Register<FocusScannerMessage>(this, (r, m) =>
         {
             Dispatcher.Dispatch(() => ScanEntry.Focus());
@@ -23,10 +23,16 @@ public partial class BoxSearchPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        // Fokus przy wejściu na stronę
-        ScanEntry.Focus();
+        
+        // Użycie Dispatcher.Dispatch gwarantuje, że kontrolka jest w pełni załadowana
+        Dispatcher.Dispatch(() => ScanEntry.Focus());
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        
+        // Wyrejestrowanie komunikatu przy opuszczaniu strony
+        WeakReferenceMessenger.Default.Unregister<FocusScannerMessage>(this);
     }
 }
-
-// Definicja komunikatu (możesz ją umieścić w nowym pliku lub na końcu tego pliku)
-public class FocusScannerMessage { }
