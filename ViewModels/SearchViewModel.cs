@@ -6,6 +6,7 @@ using MagazynApp.Services;
 using MagazynApp.Model;
 using CommunityToolkit.Maui.Views; 
 using MagazynApp.Views;
+
 namespace MagazynApp.ViewModels;
 
 public class FocusScannerMessage { }
@@ -23,7 +24,8 @@ public partial class SearchViewModel : ObservableObject
 
     [ObservableProperty] 
     [NotifyPropertyChangedFor(nameof(IsEditable))]
-    [NotifyPropertyChangedFor(nameof(HasBoxLoaded))] // Dodaj to powiadomienie
+    [NotifyPropertyChangedFor(nameof(HasBoxLoaded))] 
+    [NotifyPropertyChangedFor(nameof(CanCloseBox))]
     private Box? _currentBox;
 
     public bool HasBoxLoaded => CurrentBox != null;
@@ -35,6 +37,16 @@ public partial class SearchViewModel : ObservableObject
         _storageService = storageService;
         _navState = navState;
     }
+
+    public bool CanCloseBox => CurrentBox != null &&
+                               CurrentBox.Status != "Wysłany" &&
+                               CurrentBox.Status != "Zamknięty" &&
+                               CurrentBox.Items.Any() &&
+                               CurrentBox.Items.All(i => 
+                                   (i.ConfirmedQuantity == i.Quantity || i.ConfirmedQuantity == 0) && 
+                                   i.Quantity > 0 &&
+                                   i.MissingQty == 0 && 
+                                   i.DamagedQty == 0);
 
     partial void OnReloadBoxCodeChanged(string? value)
     {
@@ -54,9 +66,16 @@ public partial class SearchViewModel : ObservableObject
             if (updatedBox != null)
             {
                 CurrentBox = updatedBox;
+                NotifyStateChanged();
                 WeakReferenceMessenger.Default.Send(new FocusScannerMessage());
             }
         });
+    }
+
+    private void NotifyStateChanged()
+    {
+        OnPropertyChanged(nameof(CanCloseBox));
+        OnPropertyChanged(nameof(IsEditable));
     }
 
     [RelayCommand]
@@ -82,6 +101,7 @@ public partial class SearchViewModel : ObservableObject
             StatusMessage = $"Błąd: Produkt {sku} nie istnieje w tym kartonie.";
         }
     }
+
     [RelayCommand]
     private async Task ProcessScanAsync()
     {
@@ -99,6 +119,7 @@ public partial class SearchViewModel : ObservableObject
             {
                 IncrementProductQuantity(codeToSearch);
                 await _storageService.UpdateBox(CurrentBox);
+                NotifyStateChanged();
             }
         }
         else
@@ -134,6 +155,7 @@ public partial class SearchViewModel : ObservableObject
             item.Quantity = newQty;
             await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
             await _storageService.UpdateBox(CurrentBox);
+            NotifyStateChanged();
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
@@ -155,6 +177,7 @@ public partial class SearchViewModel : ObservableObject
                 item.Notes = note;
                 item.IsFlagged = true;
                 await _storageService.UpdateBox(CurrentBox!);
+                NotifyStateChanged();
             }
         }
         else if (action == "Edytuj ilość")
@@ -164,6 +187,7 @@ public partial class SearchViewModel : ObservableObject
             {
                 item.Quantity = newQty;
                 await _storageService.UpdateBox(CurrentBox!);
+                NotifyStateChanged();
             }
         }
         else if (action == "Zgłoś braki" || action == "Zgłoś uszkodzenie")
@@ -179,6 +203,7 @@ public partial class SearchViewModel : ObservableObject
 
                 item.IsFlagged = true;
                 await _storageService.UpdateBox(CurrentBox!);
+                NotifyStateChanged();
             }
         }
         else if (action == "Wyczyść zgłoszenia")
@@ -188,8 +213,10 @@ public partial class SearchViewModel : ObservableObject
             item.Notes = string.Empty;
             item.IsFlagged = false;
             await _storageService.UpdateBox(CurrentBox!);
+            NotifyStateChanged();
         }
     }
+
     [RelayCommand]
     private async Task StartVerification()
     {
@@ -199,8 +226,31 @@ public partial class SearchViewModel : ObservableObject
             return;
         }
 
-        // Wywołanie popupa
         var popup = new VerificationSummaryPopup(CurrentBox);
         await Shell.Current.CurrentPage.ShowPopupAsync(popup);
+    }
+
+    [RelayCommand]
+    private async Task CloseBoxAsync()
+    {
+        if (CurrentBox == null || !CanCloseBox) return;
+
+        bool confirm = await Shell.Current.DisplayAlert(
+            "Zamknięcie kartonu", 
+            $"Czy na pewno chcesz zamknąć karton {CurrentBox.BoxCode}? Status zmieni się na 'Zamknięty'.", 
+            "Tak", "Anuluj");
+
+        if (confirm)
+        {
+            CurrentBox.Status = "Zamknięty";
+        
+            await _storageService.UpdateBox(CurrentBox);
+            await _storageService.LogAudit(CurrentBox.BoxCode, "SYSTEM", 0, 0, "Zamknięcie kartonu");
+
+            StatusMessage = $"Karton {CurrentBox.BoxCode} został zamknięty.";
+        
+            await RefreshCurrentBox(CurrentBox.BoxCode);
+            NotifyStateChanged();
+        }
     }
 }

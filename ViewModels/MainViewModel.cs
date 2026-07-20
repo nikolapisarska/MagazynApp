@@ -243,5 +243,26 @@ public partial class MainViewModel : ObservableObject
             await Shell.Current.DisplayAlert("Błąd importu", ex.Message, "OK");
         }
     }
+    [RelayCommand]
+    private async Task OpenBoxAsync(Box? box)
+    {
+        if (box == null) return;
+
+        // Jeśli masz otwarty inny karton, możesz opcjonalnie najpierw zapisać/zamknąć lub po prostu przełączyć
+        var fullBox = await _storageService.GetBoxByCodeAsync(box.BoxCode);
+        if (fullBox != null)
+        {
+            CurrentBox = fullBox;
+            CurrentBox.LoadAfterRead();
+            CurrentBox.IsClosed = false;
+            CurrentItems.Clear();
+            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
+            UpdateListIndices();
+            StatusMessage = $"Otwarto karton: {box.BoxCode}";
+        
+            // Opcjonalnie: wyczyść listę znalezionych zamkniętych kartonów po otwarciu
+            FoundClosedBoxes.Clear();
+        }
+    }
     
 }

@@ -80,10 +80,29 @@
         </CollectionView>
 
         <!-- Dolny panel z przyciskami (widoczny tylko po załadowaniu) -->
+        <!-- Dolny panel z przyciskami (widoczny tylko po załadowaniu) -->
         <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E"
                              IsVisible="{Binding HasBoxLoaded}">
+    
+            <!-- Nowy przycisk zamknięcia kartonu -->
+            
+
             <Button Text="Dodaj Produkt" Command="{Binding AddProductCommand}" BackgroundColor="#4CAF50" TextColor="White" FontAttributes="Bold"/>
             <Button Text="Weryfikuj Zgodność" Command="{Binding StartVerificationCommand}" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" HeightRequest="50"/>
+           <Button Text="Zamknij Karton" 
+                               Command="{Binding CloseBoxCommand}" 
+                               IsEnabled="{Binding CanCloseBox}"
+                               BackgroundColor="#2196F3" 
+                               TextColor="White" 
+                               FontAttributes="Bold" 
+                               HeightRequest="45">
+                           <Button.Triggers>
+                               <DataTrigger TargetType="Button" Binding="{Binding CanCloseBox}" Value="False">
+                                   <Setter Property="BackgroundColor" Value="#555555" />
+                                   <Setter Property="TextColor" Value="#AAAAAA" />
+                               </DataTrigger>
+                           </Button.Triggers>
+                       </Button> 
         </VerticalStackLayout>
         
     </Grid>
