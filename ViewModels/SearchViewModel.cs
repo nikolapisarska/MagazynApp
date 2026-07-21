@@ -298,4 +298,35 @@ public partial class SearchViewModel : ObservableObject
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
+    [RelayCommand]
+    private async Task ReopenBoxAsync()
+    {
+        if (CurrentBox == null) return;
+
+        // Zabezpieczenie: nie otwieramy kartonów wysłanych
+        if (CurrentBox.Status == "Wysłany")
+        {
+            await Shell.Current.DisplayAlert("Błąd", "Nie można otworzyć kartonu, który został już wysłany.", "OK");
+            return;
+        }
+
+        bool confirm = await Shell.Current.DisplayAlert(
+            "Ponowne otwarcie", 
+            $"Czy na pewno chcesz otworzyć karton {CurrentBox.BoxCode}? Status zmieni się na 'Otwarty'.", 
+            "Tak", "Anuluj");
+
+        if (confirm)
+        {
+            CurrentBox.Status = "Otwarty";
+            CurrentBox.IsClosed = false; 
+
+            await _storageService.UpdateBox(CurrentBox);
+            await _storageService.LogAudit(CurrentBox.BoxCode, "SYSTEM", 0, 0, "Ponowne otwarcie kartonu");
+
+            StatusMessage = $"Karton {CurrentBox.BoxCode} został ponownie otwarty.";
+
+            NotifyStateChanged();
+            await RefreshCurrentBox(CurrentBox.BoxCode);
+        }
+    }
 }

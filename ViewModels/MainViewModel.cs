@@ -37,7 +37,7 @@ public partial class MainViewModel : ObservableObject
 
     public bool IsBoxOpen => CurrentBox != null;
     
-    // Nowa właściwość sprawdzająca czy załadowany karton jest wciąż otwarty do edycji
+    // Właściwość sprawdzająca czy załadowany karton jest wciąż otwarty do edycji
     public bool IsEditable => CurrentBox != null && 
                               CurrentBox.Status != "Wysłany" && 
                               CurrentBox.Status != "Zamknięty" &&
@@ -120,6 +120,7 @@ public partial class MainViewModel : ObservableObject
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty;
 
+        // 1. Sprawdzenie czy skanowany kod to produkt
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
@@ -154,9 +155,32 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        if (CurrentBox != null && IsEditable) { StatusMessage = "Najpierw zamknij otwarty karton!"; return; }
+        // 2. Sprawdzenie czy skanowany kod to już ISTNIEJĄCY karton (pozwala przejść z otwartego do innego istniejącego bez tworzenia nowego)
+        var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
+        if (existingBox != null)
+        {
+            // Zapisujemy stan aktualnie otwartego kartonu przed przełączeniem
+            await SaveCurrentBoxInternal();
 
-        var box = await _storageService.GetBoxByCodeAsync(scannedCode) ?? await _storageService.GetOrCreateBoxAsync(scannedCode);
+            CurrentBox = existingBox;
+            CurrentBox.LoadAfterRead();
+            CurrentItems.Clear();
+            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
+            UpdateListIndices();
+
+            FoundProduct = null;
+            StatusMessage = $"Przełączono do kartonu: {scannedCode}. Status: {CurrentBox.Status}";
+            return;
+        }
+
+        // 3. Jeśli nie jest to produkt ani istniejący karton, sprawdzamy czy możemy utworzyć nowy
+        if (CurrentBox != null && IsEditable) 
+        { 
+            StatusMessage = "Nie znaleziono produktu ani takiego kartonu!"; 
+            return; 
+        }
+
+        var box = await _storageService.GetOrCreateBoxAsync(scannedCode);
         CurrentBox = box;
         CurrentBox.LoadAfterRead();
         CurrentItems.Clear();
@@ -164,7 +188,6 @@ public partial class MainViewModel : ObservableObject
         UpdateListIndices();
         
         FoundProduct = null; 
-        
         StatusMessage = $"Otwarto karton: {scannedCode}. Status: {CurrentBox.Status}";
     }
 
