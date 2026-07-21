@@ -26,10 +26,20 @@
         </VerticalStackLayout>
 
         <!-- Informacje o kartonie (widoczne tylko po załadowaniu) -->
-        <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="5" BackgroundColor="#2C2C2C"
+        <VerticalStackLayout Grid.Row="2" Padding="15" Spacing="8" BackgroundColor="#2C2C2C"
                              IsVisible="{Binding HasBoxLoaded}">
             <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="22" FontAttributes="Bold" TextColor="White"/>
             <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" TextColor="#FFB300" FontAttributes="Bold"/>
+    
+            <!-- DODANE: Pole edycji wagi z automatycznym zapisem -->
+            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                <Label Text="Waga:" TextColor="Gray" VerticalOptions="Center" FontSize="14"/>
+                <Label Text="{Binding CurrentBox.Weight, StringFormat='{0} kg'}" 
+                       TextColor="White" 
+                       FontSize="14" 
+                       FontAttributes="Bold"
+                       VerticalOptions="Center"/>
+            </HorizontalStackLayout>
         </VerticalStackLayout>
 
         <!-- Lista produktów w kartonie (widoczna tylko po załadowaniu) -->
@@ -80,7 +90,7 @@
         </CollectionView>
 
         <!-- Dolny panel z przyciskami (widoczny tylko po załadowaniu) -->
-        <!-- Dolny panel z przyciskami (widoczny tylko po załadowaniu) -->
+      
         <VerticalStackLayout Grid.Row="4" Spacing="10" Padding="15" BackgroundColor="#1E1E1E"
                              IsVisible="{Binding HasBoxLoaded}">
     

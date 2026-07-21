@@ -11,9 +11,12 @@ public partial class Box : ObservableObject
     
     [ObservableProperty] private string _status = "W kompletacji";
     
-    // Dodano pole wagi z atrybutem ObservableProperty
-    [ObservableProperty] private double _weight = 0.0; 
-    
+    // Pole wagi
+    [ObservableProperty] private double _weight = 0.0 ; 
+    [ObservableProperty] private double _width = 0.0;
+    [ObservableProperty] private double _height = 0.0;
+    [ObservableProperty] private double _length = 0.0;
+
     public string ItemsJson { get; set; } = "[]";
 
     [Ignore] 
@@ -23,6 +26,16 @@ public partial class Box : ObservableObject
     {
         ItemsJson = JsonSerializer.Serialize(Items);
     }
-    public void LoadAfterRead() => Items = JsonSerializer.Deserialize<List<Item>>(ItemsJson) ?? new();
-    public void PrepareForSave() => ItemsJson = JsonSerializer.Serialize(Items);
+    
+    // Pobieranie danych z bazy (uwzględnia deserializację stanu, jeśli trzymasz go w JSON lub osobnych kolumnach)
+    public void LoadAfterRead() 
+    {
+        Items = JsonSerializer.Deserialize<List<Item>>(ItemsJson) ?? new();
+    }
+    
+    // Przygotowanie do zapisu - upewnij się, że wszystko jest zserializowane
+    public void PrepareForSave() 
+    {
+        ItemsJson = JsonSerializer.Serialize(Items);
+    }
 }
