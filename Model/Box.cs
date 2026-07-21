@@ -1,7 +1,7 @@
 using SQLite;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
-
+using System.Text.Encodings.Web;
 namespace MagazynApp.Model;
 
 public partial class Box : ObservableObject
@@ -34,8 +34,16 @@ public partial class Box : ObservableObject
     }
     
     // Przygotowanie do zapisu - upewnij się, że wszystko jest zserializowane
+
+
     public void PrepareForSave() 
     {
-        ItemsJson = JsonSerializer.Serialize(Items);
+        var options = new JsonSerializerOptions 
+        { 
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
+        };
+    
+        ItemsJson = JsonSerializer.Serialize(Items, options);
     }
+    
 }

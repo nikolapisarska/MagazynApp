@@ -30,7 +30,12 @@ public partial class SearchViewModel : ObservableObject
 
     public bool HasBoxLoaded => CurrentBox != null;
     public ObservableCollection<string> RecentScans { get; private set; } = new();
-    public bool IsEditable => CurrentBox != null && CurrentBox.Status != "Wysłany";
+    
+    public bool IsEditable => CurrentBox != null && 
+                              CurrentBox.Status != "Wysłany" && 
+                              CurrentBox.Status != "Zamknięty" &&
+                              CurrentBox.Status != "Closed" &&
+                              !CurrentBox.IsClosed;
 
     public SearchViewModel(IStorageService storageService, NavigationState navState)
     {
@@ -66,7 +71,7 @@ public partial class SearchViewModel : ObservableObject
             if (updatedBox != null)
             {
                 CurrentBox = updatedBox;
-                SubscribeToItemsChanges(); // <--- Nasłuchiwanie zmian w produktach
+                SubscribeToItemsChanges(); 
                 NotifyStateChanged();
                 WeakReferenceMessenger.Default.Send(new FocusScannerMessage());
             }
@@ -86,7 +91,6 @@ public partial class SearchViewModel : ObservableObject
 
     private void Item_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // Gdy zmienia się stan produktu (np. MissingQty, DamagedQty), przeliczamy CanCloseBox
         OnPropertyChanged(nameof(CanCloseBox));
     }
 
@@ -99,14 +103,18 @@ public partial class SearchViewModel : ObservableObject
     [RelayCommand]
     private async Task AddProductAsync()
     {
-        if (CurrentBox == null) return;
-        _navState.ShouldReturnToSearch = true;
+        if (CurrentBox == null || !IsEditable) return;
+    
+        // Ustawiamy flagę, że wrócimy tutaj z edycji
+        _navState.ShouldReturnToSearch = true; 
+    
+        // Przechodzimy do strony komplementacji/dodawania
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
     }
 
     private void IncrementProductQuantity(string sku)
     {
-        if (CurrentBox == null) return;
+        if (CurrentBox == null || !IsEditable) return;
 
         var item = CurrentBox.Items.FirstOrDefault(i => i.ProductSku == sku);
         if (item != null)
@@ -150,7 +158,7 @@ public partial class SearchViewModel : ObservableObject
             else
             {
                 CurrentBox = box;
-                SubscribeToItemsChanges(); // <--- Podpięcie nasłuchiwania również przy bezpośrednim skanowaniu
+                SubscribeToItemsChanges(); 
                 StatusMessage = $"Otwarto karton: {codeToSearch}";
 
                 if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
@@ -179,8 +187,8 @@ public partial class SearchViewModel : ObservableObject
     }
 
    [RelayCommand]
-    private async Task OpenIssuePopup(Item item)
-    {
+   private async Task OpenIssuePopup(Item item)
+   {
         if (!IsEditable) return;
 
         string? action = await Shell.Current.DisplayActionSheetAsync(
@@ -196,7 +204,6 @@ public partial class SearchViewModel : ObservableObject
                 item.IsFlagged = !string.IsNullOrEmpty(item.Notes) || item.MissingQty > 0 || item.DamagedQty > 0;
                 await _storageService.UpdateBox(CurrentBox!);
                 
-                // Wymuś odświeżenie interfejsu i statusu przycisku
                 OnPropertyChanged(nameof(CanCloseBox));
                 await RefreshCurrentBox(CurrentBox!.BoxCode);
             }
@@ -233,25 +240,20 @@ public partial class SearchViewModel : ObservableObject
         }
         else if (action == "Wyczyść zgłoszenia")
         {
-            // Resetujemy wartości lokalnie w obiekcie
             item.MissingQty = 0;
             item.DamagedQty = 0;
             item.Notes = string.Empty;
             item.IsFlagged = false;
 
-            // Zapisujemy stan do bazy
             await _storageService.UpdateBox(CurrentBox!);
 
-            // KLUCZOWE: Wymuszamy natychmiastowe przeliczenie CanCloseBox w wątku UI
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 OnPropertyChanged(nameof(CanCloseBox));
             });
 
-            // Odświeżamy karton z bazy
             await RefreshCurrentBox(CurrentBox!.BoxCode);
             
-            // Jeszcze raz po odświeżeniu dla pewności
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 OnPropertyChanged(nameof(CanCloseBox));
@@ -285,12 +287,14 @@ public partial class SearchViewModel : ObservableObject
         if (confirm)
         {
             CurrentBox.Status = "Zamknięty";
-        
+            CurrentBox.IsClosed = true; 
+    
             await _storageService.UpdateBox(CurrentBox);
             await _storageService.LogAudit(CurrentBox.BoxCode, "SYSTEM", 0, 0, "Zamknięcie kartonu");
 
             StatusMessage = $"Karton {CurrentBox.BoxCode} został zamknięty.";
-        
+    
+            NotifyStateChanged();
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }

@@ -63,7 +63,7 @@ public partial class MainPage : ContentPage
     private async void OnSaveAndCloseClicked(object? sender, EventArgs e)
     {
         Debug.WriteLine("DEBUG: Przycisk Zapisz i Zamknij kliknięty.");
-        await _viewModel.SaveAndCloseAsync();
+        await _viewModel.SaveAndReturnAsync();
         
         await Task.Delay(100);
         ScanEntry.Focus();

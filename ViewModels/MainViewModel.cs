@@ -4,6 +4,7 @@ using MagazynApp.Model;
 using MagazynApp.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Text.Encodings.Web;
 
 namespace MagazynApp.ViewModels;
 
@@ -18,17 +19,31 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private Product? _foundProduct;
     [ObservableProperty] private string? _boxCodeToLoad;
 
-    // Dodana właściwość, która automatycznie steruje widocznością pola produktu
     public bool IsProductVisible => FoundProduct != null;
 
     private Box? _currentBox;
     public Box? CurrentBox 
     {
         get => _currentBox;
-        set { if (SetProperty(ref _currentBox, value)) OnPropertyChanged(nameof(IsBoxOpen)); }
+        set 
+        { 
+            if (SetProperty(ref _currentBox, value)) 
+            { 
+                OnPropertyChanged(nameof(IsBoxOpen)); 
+                OnPropertyChanged(nameof(IsEditable)); // Informujemy widok o zmianie edytowalności
+            } 
+        }
     }
 
     public bool IsBoxOpen => CurrentBox != null;
+    
+    // Nowa właściwość sprawdzająca czy załadowany karton jest wciąż otwarty do edycji
+    public bool IsEditable => CurrentBox != null && 
+                              CurrentBox.Status != "Wysłany" && 
+                              CurrentBox.Status != "Zamknięty" &&
+                              CurrentBox.Status != "Closed" &&
+                              !(CurrentBox.IsClosed);
+
     public ObservableCollection<Item> CurrentItems { get; } = new();
     public ObservableCollection<Box> FoundClosedBoxes { get; } = new();
 
@@ -38,7 +53,6 @@ public partial class MainViewModel : ObservableObject
         _navState = navState;
     }
 
-    // Gdy zmienia się FoundProduct, informujemy interfejs, że IsProductVisible też się zmieniło
     partial void OnFoundProductChanged(Product? value)
     {
         OnPropertyChanged(nameof(IsProductVisible));
@@ -61,8 +75,18 @@ public partial class MainViewModel : ObservableObject
             string action = await Shell.Current.DisplayActionSheet("Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
             if (action == "Anuluj") return;
 
-            string json = action == "Produkty" ? JsonSerializer.Serialize(await _storageService.GetProductsAsync()) : JsonSerializer.Serialize(await _storageService.GetBoxesAsync());
+            var options = new JsonSerializerOptions 
+            { 
+                WriteIndented = true, 
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
+            };
+
+            string json = action == "Produkty" 
+                ? JsonSerializer.Serialize(await _storageService.GetProductsAsync(), options) 
+                : JsonSerializer.Serialize(await _storageService.GetBoxesAsync(), options); 
+            
             string fileName = $"{action}_{DateTime.Now:yyyyMMddHHmm}.json";
+            
             string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
             await File.WriteAllTextAsync(filePath, json);
             await Share.Default.RequestAsync(new ShareFileRequest { Title = $"Eksport: {action}", File = new ShareFile(filePath) });
@@ -102,6 +126,12 @@ public partial class MainViewModel : ObservableObject
             FoundProduct = product;
             if (CurrentBox != null)
             {
+                if (!IsEditable)
+                {
+                    StatusMessage = "Nie można edytować zamkniętego kartonu!";
+                    return;
+                }
+
                 var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
                 if (existingItem != null) existingItem.Quantity += 1;
                 else
@@ -124,35 +154,36 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        if (CurrentBox != null) { StatusMessage = "Najpierw zamknij otwarty karton!"; return; }
+        if (CurrentBox != null && IsEditable) { StatusMessage = "Najpierw zamknij otwarty karton!"; return; }
 
         var box = await _storageService.GetBoxByCodeAsync(scannedCode) ?? await _storageService.GetOrCreateBoxAsync(scannedCode);
         CurrentBox = box;
         CurrentBox.LoadAfterRead();
-        CurrentBox.IsClosed = false;
         CurrentItems.Clear();
         foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
         UpdateListIndices();
         
-        FoundProduct = null; // Czyszczenie znalezionego produktu po otwarciu kartonu
+        FoundProduct = null; 
         
-        StatusMessage = $"Otwarto karton: {scannedCode}.";
+        StatusMessage = $"Otwarto karton: {scannedCode}. Status: {CurrentBox.Status}";
     }
 
     [RelayCommand]
-    public async Task SaveAndCloseAsync()
+    public async Task SaveAndReturnAsync()
     {
         if (CurrentBox == null) return;
-        
+
         string codeToReturn = CurrentBox.BoxCode;
-        CurrentBox.IsClosed = true;
+
+        // Zapisujemy aktualny stan do bazy BEZ zmieniania statusu na Zamknięty
         await SaveCurrentBoxInternal();
-        
-        StatusMessage = $"Karton {codeToReturn} zamknięty.";
+
+        StatusMessage = $"Zapisano zmiany w kartonie {codeToReturn}.";
         CurrentBox = null; 
         CurrentItems.Clear();
-        FoundProduct = null; // Czyszczenie przy zamknięciu
-        
+        FoundProduct = null; 
+
+        // Jeśli użytkownik przeszedł z Centrum Operacyjnego (BoxSearchPage), wracamy tam z odświeżeniem
         if (_navState.ShouldReturnToSearch)
         {
             _navState.ShouldReturnToSearch = false; 
@@ -167,6 +198,8 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task RemoveItem(Item item)
     {
+        if (!IsEditable) return; // Blokada usunięcia, gdy karton jest zamknięty
+
         CurrentItems.Remove(item);
         CurrentBox?.Items.Remove(item);
         UpdateListIndices();
@@ -199,12 +232,11 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentBox = box;
             CurrentBox.LoadAfterRead();
-            CurrentBox.IsClosed = false;
             CurrentItems.Clear();
             foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
             UpdateListIndices();
             
-            FoundProduct = null; // Czyszczenie produktu przy ładowaniu po kodzie
+            FoundProduct = null; 
             
             StatusMessage = $"Otwarto karton: {boxCode}";
         }
@@ -215,9 +247,9 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ImportItemsToBoxAsync()
     {
-        if (CurrentBox == null)
+        if (CurrentBox == null || !IsEditable)
         {
-            await Shell.Current.DisplayAlert("Błąd", "Najpierw otwórz karton!", "OK");
+            await Shell.Current.DisplayAlert("Błąd", "Najpierw otwórz edytowalny karton!", "OK");
             return;
         }
 
@@ -268,12 +300,11 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentBox = fullBox;
             CurrentBox.LoadAfterRead();
-            CurrentBox.IsClosed = false;
             CurrentItems.Clear();
             foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
             UpdateListIndices();
             
-            FoundProduct = null; // Czyszczenie produktu przy kliknięciu w karton z listy
+            FoundProduct = null; 
             
             StatusMessage = $"Otwarto karton: {box.BoxCode}";
             FoundClosedBoxes.Clear();

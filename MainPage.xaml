@@ -27,7 +27,19 @@
                         FlexLayout.Basis="{OnIdiom Desktop='400', Phone='100%'}"
                         FlexLayout.Grow="1">
                     <VerticalStackLayout Spacing="8">
-                        <Label Text="Status: Aktywny" TextColor="#81C784" FontAttributes="Bold" FontSize="14"/>
+                        <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" 
+                               FontAttributes="Bold" 
+                               FontSize="14"
+                               TextColor="#FFB300">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsEditable}" Value="True">
+                                    <Setter Property="TextColor" Value="#FFB300" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsEditable}" Value="False">
+                                    <Setter Property="TextColor" Value="#E57373" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
                         <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#BDBDBD"/>
                         
                         <SearchBar x:Name="ScanEntry"
@@ -136,6 +148,7 @@
                                                            BackgroundColor="Transparent"
                                                            HeightRequest="40"
                                                            Margin="0,0,5,0"/> 
+                                                    <!-- Przycisk usuwania (X) ukrywa się, gdy IsEditable jest false (karton zamknięty) -->
                                                     <Button Grid.Column="1" 
                                                             Text="X" 
                                                             TextColor="Red"
@@ -144,6 +157,7 @@
                                                             FontAttributes="Bold"
                                                             Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=RemoveItemCommand}"
                                                             CommandParameter="{Binding .}"
+                                                            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=IsEditable}"
                                                             VerticalOptions="Center"
                                                             HorizontalOptions="Center"
                                                             Padding="0"
@@ -158,14 +172,28 @@
                             </CollectionView>
                         </VerticalStackLayout>
                     </Border>
+                    
+                    <!-- Przycisk importu – ukrywa się, gdy karton jest zamknięty -->
                     <Button Text="IMPORTUJ LISTĘ PRODUKTÓW" 
                             Command="{Binding ImportItemsToBoxCommand}"
+                            IsVisible="{Binding IsEditable}"
                             BackgroundColor="#2196F3" 
                             TextColor="White" 
                             FontSize="16" 
                             CornerRadius="8" 
                             HeightRequest="50"/>
-                    <Button Text="ZAMKNIJ I ZAPISZ KARTON" Clicked="OnSaveAndCloseClicked" BackgroundColor="#fcc821" TextColor="Black" FontAttributes="Bold" FontSize="16" CornerRadius="8" HeightRequest="60" Margin="0,10,0,20"/>
+                            
+                    <!-- Przycisk zamknięcia i zapisu – ukrywa się, gdy karton jest zamknięty -->
+                    <Button Text="ZAPISZ KARTON" 
+                            Command="{Binding SaveAndReturnCommand}" 
+                            IsVisible="{Binding IsEditable}"
+                            BackgroundColor="#fcc821" 
+                            TextColor="Black" 
+                            FontAttributes="Bold" 
+                            FontSize="16" 
+                            CornerRadius="8" 
+                            HeightRequest="60" 
+                            Margin="0,10,0,20"/>
                 </VerticalStackLayout>
            
             </FlexLayout>
