@@ -8,9 +8,26 @@
 
     <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
         
-        <!-- Nagłówek -->
-        <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
-            <Label Text="Centrum Operacyjne" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+        <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E" ColumnDefinitions="60, *, 60">
+            
+            <!-- Przycisk powrotu (strzałka) -->
+            <Button Grid.Column="0" 
+                    Text="←" 
+                    FontSize="22" 
+                    TextColor="White" 
+                    BackgroundColor="Transparent"
+                    Command="{Binding GoBackToMainCommand}"
+                    VerticalOptions="Center" 
+                    HorizontalOptions="Center"/>
+
+            <!-- Tytuł -->
+            <Label Grid.Column="1" 
+                   Text="Centrum Operacyjne" 
+                   TextColor="White" 
+                   FontSize="20" 
+                   FontAttributes="Bold" 
+                   VerticalOptions="Center" 
+                   HorizontalOptions="Center"/>
         </Grid>
 
         <!-- Wyszukiwarka i status (zawsze widoczne) -->

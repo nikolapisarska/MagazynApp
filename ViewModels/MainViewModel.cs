@@ -333,4 +333,11 @@ public partial class MainViewModel : ObservableObject
             FoundClosedBoxes.Clear();
         }
     }
+    [RelayCommand]
+    private async Task GoBackAsync()
+    {
+        await SaveCurrentBoxInternal();
+        // Przechodzimy do strony głównej
+        await Shell.Current.GoToAsync("///DashboardPage");
+    }
 }

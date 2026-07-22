@@ -8,12 +8,27 @@
              BackgroundColor="#121212">
 
     <Grid RowDefinitions="Auto, *" RowSpacing="0">
-        
-        <!-- NAGŁÓWEK -->
-        <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E">
-            <Label Text="Panel Magazynowy" TextColor="White" FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
-        </Grid>
+        <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E" ColumnDefinitions="60, *, 60">
+            
+            <!-- Przycisk powrotu (strzałka) -->
+            <Button Grid.Column="0" 
+                    Text="←" 
+                    FontSize="22" 
+                    TextColor="White" 
+                    BackgroundColor="Transparent"
+                    Command="{Binding GoBackCommand}"
+                    VerticalOptions="Center" 
+                    HorizontalOptions="Center"/>
 
+            <!-- Tytuł -->
+            <Label Grid.Column="1" 
+                   Text="Panel Magazynowy"
+                   TextColor="White" 
+                   FontSize="20" 
+                   FontAttributes="Bold" 
+                   VerticalOptions="Center" 
+                   HorizontalOptions="Center"/>
+       </Grid>
         <!-- ELASTYCZNY KONTENER RESPONSYWNY -->
         <ScrollView Grid.Row="1" Padding="15">
             <FlexLayout Direction="Row" 

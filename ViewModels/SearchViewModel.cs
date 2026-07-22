@@ -329,4 +329,9 @@ public partial class SearchViewModel : ObservableObject
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
+    [RelayCommand]
+    private async Task GoBackToMainAsync()
+    {
+        await Shell.Current.GoToAsync("///DashboardPage");
+    }
 }
