@@ -20,44 +20,9 @@ public partial class MainPage : ContentPage
         
         await _viewModel.InitializeLocalDatabaseAsync();
         
-        // Wymuszenie skupienia z małym opóźnieniem dla stabilności na desktopie
+        // Wymuszenie skupienia z małym opóźnieniem dla stabilności na desktopie i mobile
         await Task.Delay(250);
         ScanEntry.Focus();
-    }
-
-    private void OnScanEntryCompleted(object sender, EventArgs e)
-    {
-        Debug.WriteLine("DEBUG: Zdarzenie OnScanEntryCompleted zostało wywołane.");
-
-        if (sender is Entry entry)
-        {
-            // Sprawdzamy czy tekst nie jest pusty
-            if (string.IsNullOrWhiteSpace(entry.Text))
-            {
-                Debug.WriteLine("DEBUG: Entry jest puste, przerywam.");
-                return;
-            }
-
-            if (_viewModel.ProcessScanCommand.CanExecute(null))
-            {
-                Debug.WriteLine("DEBUG: Wykonuję ProcessScanCommand.");
-                _viewModel.ProcessScanCommand.Execute(null);
-            }
-            else
-            {
-                Debug.WriteLine("DEBUG: CanExecute zwróciło false.");
-            }
-
-            // Czyszczenie i ponowne ustawienie fokusu
-            entry.Text = string.Empty;
-            
-            // Ponowne skupienie z krótkim opóźnieniem
-            Dispatcher.Dispatch(async () => 
-            {
-                await Task.Delay(100);
-                entry.Focus();
-            });
-        }
     }
 
     private async void OnSaveAndCloseClicked(object? sender, EventArgs e)

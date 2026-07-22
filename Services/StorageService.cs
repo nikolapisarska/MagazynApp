@@ -45,7 +45,7 @@ public class StorageService : IStorageService
     {
         await EnsureInitializedAsync();
         var box = await GetBoxByCodeAsync(boxCode);
-        return box ?? new Box { BoxCode = boxCode, Status = "Nowy", Weight = 0.0 };
+        return box ?? new Box { BoxCode = boxCode, Status = BoxStatus.InProgress, Weight = 0.0 };
     }
 
     public async Task SaveBoxAsync(Box box)

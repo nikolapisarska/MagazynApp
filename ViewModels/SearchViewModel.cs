@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -6,6 +7,9 @@ using MagazynApp.Services;
 using MagazynApp.Model;
 using CommunityToolkit.Maui.Views; 
 using MagazynApp.Views;
+using Microsoft.Maui;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Controls;
 
 namespace MagazynApp.ViewModels;
 

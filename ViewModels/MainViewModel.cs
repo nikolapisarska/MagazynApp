@@ -30,18 +30,17 @@ public partial class MainViewModel : ObservableObject
             if (SetProperty(ref _currentBox, value)) 
             { 
                 OnPropertyChanged(nameof(IsBoxOpen)); 
-                OnPropertyChanged(nameof(IsEditable)); // Informujemy widok o zmianie edytowalności
+                OnPropertyChanged(nameof(IsEditable)); 
             } 
         }
     }
 
     public bool IsBoxOpen => CurrentBox != null;
     
-    // Właściwość sprawdzająca czy załadowany karton jest wciąż otwarty do edycji
+    // Sprawdzanie czy karton jest edytowalny przy użyciu stałych BoxStatus
     public bool IsEditable => CurrentBox != null && 
-                              CurrentBox.Status != "Wysłany" && 
-                              CurrentBox.Status != "Zamknięty" &&
-                              CurrentBox.Status != "Closed" &&
+                              CurrentBox.Status != BoxStatus.Sent && 
+                              CurrentBox.Status != BoxStatus.Closed &&
                               !(CurrentBox.IsClosed);
 
     public ObservableCollection<Item> CurrentItems { get; } = new();
@@ -142,6 +141,12 @@ public partial class MainViewModel : ObservableObject
                     CurrentBox.Items.Add(newItem);
                     UpdateListIndices();
                 }
+
+                if (CurrentBox.Status == BoxStatus.New)
+                {
+                    CurrentBox.Status = BoxStatus.InProgress;
+                }
+
                 await SaveCurrentBoxInternal();
                 StatusMessage = $"Dodano: {product.Name}";
             }
@@ -155,25 +160,22 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        // 2. Sprawdzenie czy skanowany kod to już ISTNIEJĄCY karton (pozwala przejść z otwartego do innego istniejącego bez tworzenia nowego)
+        // 2. Sprawdzenie czy skanowany kod to już ISTNIEJĄCY karton
         var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
         if (existingBox != null)
         {
-            // Zapisujemy stan aktualnie otwartego kartonu przed przełączeniem
             await SaveCurrentBoxInternal();
 
             CurrentBox = existingBox;
             CurrentBox.LoadAfterRead();
-            CurrentItems.Clear();
-            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
-            UpdateListIndices();
+            ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
 
             FoundProduct = null;
             StatusMessage = $"Przełączono do kartonu: {scannedCode}. Status: {CurrentBox.Status}";
             return;
         }
 
-        // 3. Jeśli nie jest to produkt ani istniejący karton, sprawdzamy czy możemy utworzyć nowy
+        // 3. Utworzenie nowego kartonu, jeśli nie znaleziono produktu ani kartonu
         if (CurrentBox != null && IsEditable) 
         { 
             StatusMessage = "Nie znaleziono produktu ani takiego kartonu!"; 
@@ -183,9 +185,7 @@ public partial class MainViewModel : ObservableObject
         var box = await _storageService.GetOrCreateBoxAsync(scannedCode);
         CurrentBox = box;
         CurrentBox.LoadAfterRead();
-        CurrentItems.Clear();
-        foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
-        UpdateListIndices();
+        ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
         
         FoundProduct = null; 
         StatusMessage = $"Otwarto karton: {scannedCode}. Status: {CurrentBox.Status}";
@@ -196,17 +196,19 @@ public partial class MainViewModel : ObservableObject
     {
         if (CurrentBox == null) return;
 
+        // 1. Ustawienie statusu na zamknięty przed zapisem
+        CurrentBox.Status = BoxStatus.Closed;
+        CurrentBox.IsClosed = true;
+
         string codeToReturn = CurrentBox.BoxCode;
 
-        // Zapisujemy aktualny stan do bazy BEZ zmieniania statusu na Zamknięty
         await SaveCurrentBoxInternal();
 
-        StatusMessage = $"Zapisano zmiany w kartonie {codeToReturn}.";
+        StatusMessage = $"Zapisano i zamknięto karton {codeToReturn}.";
         CurrentBox = null; 
         CurrentItems.Clear();
         FoundProduct = null; 
 
-        // Jeśli użytkownik przeszedł z Centrum Operacyjnego (BoxSearchPage), wracamy tam z odświeżeniem
         if (_navState.ShouldReturnToSearch)
         {
             _navState.ShouldReturnToSearch = false; 
@@ -221,7 +223,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task RemoveItem(Item item)
     {
-        if (!IsEditable) return; // Blokada usunięcia, gdy karton jest zamknięty
+        if (!IsEditable) return; 
 
         CurrentItems.Remove(item);
         CurrentBox?.Items.Remove(item);
@@ -255,12 +257,9 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentBox = box;
             CurrentBox.LoadAfterRead();
-            CurrentItems.Clear();
-            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
-            UpdateListIndices();
+            ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
             
             FoundProduct = null; 
-            
             StatusMessage = $"Otwarto karton: {boxCode}";
         }
     }
@@ -323,21 +322,29 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentBox = fullBox;
             CurrentBox.LoadAfterRead();
-            CurrentItems.Clear();
-            foreach (var item in CurrentBox.Items) CurrentItems.Add(item);
-            UpdateListIndices();
+            ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
             
             FoundProduct = null; 
-            
             StatusMessage = $"Otwarto karton: {box.BoxCode}";
             FoundClosedBoxes.Clear();
         }
     }
+
     [RelayCommand]
     private async Task GoBackAsync()
     {
         await SaveCurrentBoxInternal();
-        // Przechodzimy do strony głównej
         await Shell.Current.GoToAsync("///DashboardPage");
+    }
+
+    // Metoda pomocnicza optymalizująca ładowanie elementów do kolekcji
+    private void ReloadItems(IEnumerable<Item> newItems)
+    {
+        CurrentItems.Clear();
+        foreach (var item in newItems)
+        {
+            CurrentItems.Add(item);
+        }
+        UpdateListIndices();
     }
 }
