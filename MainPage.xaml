@@ -132,7 +132,7 @@
 
                     <Border StrokeThickness="0" BackgroundColor="#2B2B2B" StrokeShape="RoundRectangle 5">
                         <VerticalStackLayout Spacing="0">
-                            <Grid ColumnDefinitions="40,120,*,80" HeightRequest="42" BackgroundColor="#fcc821">
+                            <Grid ColumnDefinitions="40,120,*,85" HeightRequest="42" BackgroundColor="#fcc821">
                                 <Label Grid.Column="0" Text="LP" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
                                 <Label Grid.Column="1" Text="INDEX" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
                                 <Label Grid.Column="2" Text="NAZWA TOWARU" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
@@ -142,7 +142,7 @@
                             <CollectionView ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton.">
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate x:DataType="model:Item">
-                                        <Grid RowDefinitions="45,1" RowSpacing="0">
+                                        <Grid RowDefinitions="70,1" RowSpacing="0">
                                             <Grid Grid.Row="0" ColumnDefinitions="40,120,*,80" BackgroundColor="#2B2B2B">
                                                 <Grid.Triggers>
                                                     <DataTrigger TargetType="Grid" Binding="{Binding IsEven}" Value="True">

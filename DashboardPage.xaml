@@ -9,7 +9,7 @@
         <Grid Grid.Row="0" HeightRequest="60" >
             <Label Text="Panel Magazynowy" TextColor="White" FontSize="30" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
-        <VerticalStackLayout Spacing="15" Margin="0,50,0,20">
+        <VerticalStackLayout Spacing="15" Margin="0,80,0,20">
             
             <Button Text="Rozpocznij Komplementację" 
                     Clicked="OnStartPickingClicked" 
@@ -28,14 +28,14 @@
             <Label Text="Skanuj kod, zobacz co jest w środku" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>
             
         </VerticalStackLayout>
-        <VerticalStackLayout Spacing="10" Margin="0,20,0,0">
+        <VerticalStackLayout Spacing="25" Margin="0,230,0,0">
             <Button Text="EXPORT DANYCH" 
                     Command="{Binding ExportDataCommand}"
-                    BackgroundColor="Gray" />
+                    BackgroundColor="Gray"  HeightRequest="60"/>
                     
             <Button Text="IMPORT DANYCH" 
                     Command="{Binding ImportDataCommand}"
-                    BackgroundColor="Gray" />
+                    BackgroundColor="Gray"  HeightRequest="60"/>
         </VerticalStackLayout>
         
     </VerticalStackLayout>
