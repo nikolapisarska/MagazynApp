@@ -26,6 +26,7 @@
                         <Frame Margin="0,5" Padding="10" CornerRadius="8" HasShadow="False" BorderColor="#DDD">
                             <VerticalStackLayout Spacing="2">
                                 <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="16"/>
+                                <Label Text="{Binding ProductId}"  FontSize="14"/>
                                 <Label Text="{Binding StatusLabel}" FontSize="13" TextColor="{Binding StatusColor}"/>
                                 <Label Text="{Binding Notes, StringFormat='Uwagi: {0}'}" 
                                        FontSize="12" TextColor="Gray" FontAttributes="Italic"

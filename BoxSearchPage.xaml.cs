@@ -20,12 +20,14 @@ public partial class BoxSearchPage : ContentPage
         });
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        
-        // Użycie Dispatcher.Dispatch gwarantuje, że kontrolka jest w pełni załadowana
-        Dispatcher.Dispatch(() => ScanEntry.Focus());
+
+   
+        // Wymuszenie skupienia z małym opóźnieniem dla stabilności na desktopie i mobile
+        await Task.Delay(250);
+        ScanEntry.Focus();
     }
 
     protected override void OnDisappearing()

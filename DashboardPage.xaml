@@ -5,11 +5,7 @@
              BackgroundColor="#121212">
 
     <VerticalStackLayout Padding="20" Spacing="20">
-        
-        <Grid ColumnDefinitions="Auto, *, Auto">
-            <Label Grid.Column="2" Text="Status: Online" VerticalOptions="Center" TextColor="LightGreen" />
-        </Grid>
-
+       
         <Grid Grid.Row="0" HeightRequest="60" >
             <Label Text="Panel Magazynowy" TextColor="White" FontSize="30" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
         </Grid>
@@ -18,7 +14,7 @@
             <Button Text="Rozpocznij Komplementację" 
                     Clicked="OnStartPickingClicked" 
                     BackgroundColor="#fcc821" 
-                    TextColor="Black" 
+                    TextColor="Black"
                     FontAttributes="Bold" 
                     HeightRequest="60"/>
             <Label Text="Skompletuj nowy karton" HorizontalOptions="Center" TextColor="Gray" FontSize="12"/>

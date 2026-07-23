@@ -76,22 +76,22 @@
                             </VerticalStackLayout>
                         </Border>
 
-                        <CollectionView ItemsSource="{Binding FoundClosedBoxes}">
-                            <CollectionView.ItemTemplate>
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding FoundClosedBoxes}" Spacing="5">
+                            <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="model:Box">
-                                    <Border Margin="5" Padding="10" BackgroundColor="#2D2D2D" StrokeShape="RoundRectangle 5" StrokeThickness="0">
+                                    <Border Margin="0,2" Padding="10" BackgroundColor="#383838" StrokeShape="RoundRectangle 5" StrokeThickness="0">
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=OpenBoxCommand}"
                                                                   CommandParameter="{Binding .}"/>
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout Spacing="10">
                                             <Label Text="Karton:" FontAttributes="Bold" TextColor="White"/>
-                                            <Label Text="{Binding BoxCode}" TextColor="Yellow"/>
+                                            <Label Text="{Binding BoxCode}" TextColor="Yellow" FontAttributes="Bold"/>
                                         </HorizontalStackLayout>
                                     </Border>
                                 </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 

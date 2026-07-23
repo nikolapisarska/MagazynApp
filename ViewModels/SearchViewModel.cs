@@ -316,12 +316,12 @@ public partial class SearchViewModel : ObservableObject
 
         bool confirm = await Shell.Current.DisplayAlert(
             "Ponowne otwarcie", 
-            $"Czy na pewno chcesz otworzyć karton {CurrentBox.BoxCode}? Status zmieni się na 'Otwarty'.", 
+            $"Czy na pewno chcesz otworzyć karton {CurrentBox.BoxCode}? Status zmieni się na 'w komplementacji'.", 
             "Tak", "Anuluj");
 
         if (confirm)
         {
-            CurrentBox.Status = "Otwarty";
+            CurrentBox.Status = "W kompletacji";
             CurrentBox.IsClosed = false; 
 
             await _storageService.UpdateBox(CurrentBox);

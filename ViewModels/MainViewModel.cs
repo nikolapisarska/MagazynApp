@@ -37,7 +37,6 @@ public partial class MainViewModel : ObservableObject
 
     public bool IsBoxOpen => CurrentBox != null;
     
-    // Sprawdzanie czy karton jest edytowalny przy użyciu stałych BoxStatus
     public bool IsEditable => CurrentBox != null && 
                               CurrentBox.Status != BoxStatus.Sent && 
                               CurrentBox.Status != BoxStatus.Closed &&
@@ -119,7 +118,6 @@ public partial class MainViewModel : ObservableObject
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty;
 
-        // 1. Sprawdzenie czy skanowany kod to produkt
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
@@ -160,7 +158,6 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        // 2. Sprawdzenie czy skanowany kod to już ISTNIEJĄCY karton
         var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
         if (existingBox != null)
         {
@@ -168,14 +165,13 @@ public partial class MainViewModel : ObservableObject
 
             CurrentBox = existingBox;
             CurrentBox.LoadAfterRead();
-            ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
+            ReloadItems(CurrentBox.Items);
 
             FoundProduct = null;
             StatusMessage = $"Przełączono do kartonu: {scannedCode}. Status: {CurrentBox.Status}";
             return;
         }
 
-        // 3. Utworzenie nowego kartonu, jeśli nie znaleziono produktu ani kartonu
         if (CurrentBox != null && IsEditable) 
         { 
             StatusMessage = "Nie znaleziono produktu ani takiego kartonu!"; 
@@ -185,7 +181,7 @@ public partial class MainViewModel : ObservableObject
         var box = await _storageService.GetOrCreateBoxAsync(scannedCode);
         CurrentBox = box;
         CurrentBox.LoadAfterRead();
-        ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
+        ReloadItems(CurrentBox.Items);
         
         FoundProduct = null; 
         StatusMessage = $"Otwarto karton: {scannedCode}. Status: {CurrentBox.Status}";
@@ -196,15 +192,12 @@ public partial class MainViewModel : ObservableObject
     {
         if (CurrentBox == null) return;
 
-        // 1. Ustawienie statusu na zamknięty przed zapisem
-        CurrentBox.Status = BoxStatus.Closed;
-        CurrentBox.IsClosed = true;
-
+        // UWAGA: Nie zmieniamy statusu na Closed. Status pozostaje nienaruszony (np. W kompletacji).
         string codeToReturn = CurrentBox.BoxCode;
 
         await SaveCurrentBoxInternal();
 
-        StatusMessage = $"Zapisano i zamknięto karton {codeToReturn}.";
+        StatusMessage = $"Zapisano zmiany w kartonie {codeToReturn}.";
         CurrentBox = null; 
         CurrentItems.Clear();
         FoundProduct = null; 
@@ -216,7 +209,7 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
-            StatusMessage = "Karton zamknięty. Możesz kontynuować skanowanie.";
+            StatusMessage = $"Zapisano karton {codeToReturn}. Możesz kontynuować skanowanie.";
         }
     }
 
@@ -257,7 +250,7 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentBox = box;
             CurrentBox.LoadAfterRead();
-            ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
+            ReloadItems(CurrentBox.Items);
             
             FoundProduct = null; 
             StatusMessage = $"Otwarto karton: {boxCode}";
@@ -322,7 +315,7 @@ public partial class MainViewModel : ObservableObject
         {
             CurrentBox = fullBox;
             CurrentBox.LoadAfterRead();
-            ReloadItems(CurrentBox.Items); // Użycie metody pomocniczej
+            ReloadItems(CurrentBox.Items);
             
             FoundProduct = null; 
             StatusMessage = $"Otwarto karton: {box.BoxCode}";
@@ -337,7 +330,6 @@ public partial class MainViewModel : ObservableObject
         await Shell.Current.GoToAsync("///DashboardPage");
     }
 
-    // Metoda pomocnicza optymalizująca ładowanie elementów do kolekcji
     private void ReloadItems(IEnumerable<Item> newItems)
     {
         CurrentItems.Clear();

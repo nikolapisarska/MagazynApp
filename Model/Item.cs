@@ -38,7 +38,7 @@ public partial class Item : ObservableObject
             if (DamagedQty > 0) parts.Add($"USZK. ({DamagedQty})");
             
             if (parts.Count > 0)
-                return $"{string.Join(" / ", parts)} | Do znalezienia: {RemainingToScan}";
+                return $"{string.Join(" / ", parts)} | Do znalezienia: {MissingQty+DamagedQty}";
             
             if (ConfirmedQuantity > Quantity) return "NADMIAR!";
             return ConfirmedQuantity >= Quantity ? "KOMPLETNE" : $"POZOSTAŁO: {RemainingToScan}";
