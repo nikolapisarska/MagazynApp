@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8" ?>
 <toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
@@ -19,8 +18,8 @@
             <Label Grid.Row="0" Text="Podsumowanie Weryfikacji" TextColor="White" 
                    FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
 
-            <!-- Lista produktów -->
-            <CollectionView Grid.Row="1" ItemsSource="{Binding Items}" Margin="15">
+            <!-- Zmieniono powiązanie z Items na CurrentBox.Items, ponieważ kontekstem jest teraz SearchViewModel -->
+            <CollectionView Grid.Row="1" ItemsSource="{Binding CurrentBox.Items}" Margin="15">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Frame Margin="0,5" Padding="10" CornerRadius="8" HasShadow="False" BorderColor="#DDD">
@@ -40,8 +39,6 @@
             <!-- Stopka z przyciskami -->
             <HorizontalStackLayout Grid.Row="2" Spacing="10" Padding="20" HorizontalOptions="Center">
                 <Button Text="Zamknij" Clicked="OnCloseClicked" WidthRequest="150" BackgroundColor="#E0E0E0"/>
-                <Button Text="Generuj PDF" Command="{Binding GeneratePdfCommand}" 
-                        WidthRequest="150" BackgroundColor="#4CAF50" TextColor="White"/>
             </HorizontalStackLayout>
         </Grid>
     </Border>

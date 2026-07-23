@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -7,9 +6,7 @@ using MagazynApp.Services;
 using MagazynApp.Model;
 using CommunityToolkit.Maui.Views; 
 using MagazynApp.Views;
-using Microsoft.Maui;
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Controls;
+
 
 namespace MagazynApp.ViewModels;
 
@@ -265,18 +262,19 @@ public partial class SearchViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task StartVerification()
-    {
-        if (CurrentBox == null)
-        {
-            await Shell.Current.DisplayAlert("Błąd", "Brak otwartego kartonu.", "OK");
-            return;
-        }
+   [RelayCommand]
+   private async Task StartVerification()
+   {
+       if (CurrentBox == null)
+       {
+           await Shell.Current.DisplayAlert("Błąd", "Brak otwartego kartonu.", "OK");
+           return;
+       }
 
-        var popup = new VerificationSummaryPopup(CurrentBox);
-        await Shell.Current.CurrentPage.ShowPopupAsync(popup);
-    }
+       // Przekazujemy 'this' jako SearchViewModel do popupa
+       var popup = new VerificationSummaryPopup(CurrentBox, this);
+       await Shell.Current.CurrentPage.ShowPopupAsync(popup);
+   }
 
     [RelayCommand]
     private async Task CloseBoxAsync()

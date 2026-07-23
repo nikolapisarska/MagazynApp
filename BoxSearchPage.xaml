@@ -91,6 +91,7 @@
 
                         <VerticalStackLayout VerticalOptions="Center">
                             <Label Text="{Binding ProductName}" TextColor="White" FontAttributes="Bold"/>
+                            <Label Text="{Binding ProductId}" TextColor="lightgray" FontSize="14"/>
                             <Label Text="{Binding StatusLabel}" 
                                    TextColor="{Binding StatusColor}" 
                                    FontSize="11" 

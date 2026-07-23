@@ -29,11 +29,13 @@ public static class MauiProgram
         builder.Services.AddTransient<BoxSearchPage>();
         builder.Services.AddTransient<SearchViewModel>();
 
+        // W MauiProgram.cs
         builder.Services.AddTransient<DashboardPage>();
         
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
+        
         return builder.Build();
     }
 }

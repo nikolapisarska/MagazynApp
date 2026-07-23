@@ -1,10 +1,9 @@
 using MagazynApp.Model;
 using SQLite;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-namespace MagazynApp.Services;
+using PdfSharp.Pdf;
+using PdfSharp.Drawing;
 
+namespace MagazynApp.Services;
 public class StorageService : IStorageService
 {
     private SQLiteAsyncConnection? _db;
@@ -16,13 +15,14 @@ public class StorageService : IStorageService
     private async Task EnsureInitializedAsync()
     {
         if (_isInitialized) return;
-    
+
         await _semaphore.WaitAsync();
         try
         {
             if (!_isInitialized)
             {
-                _db = new SQLiteAsyncConnection(_dbPath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
+                _db = new SQLiteAsyncConnection(_dbPath,
+                    SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
                 await _db.CreateTableAsync<Product>();
                 await _db.CreateTableAsync<Box>();
                 await _db.CreateTableAsync<AuditLog>();
@@ -128,68 +128,26 @@ public class StorageService : IStorageService
     public async Task LogAudit(string boxCode, string sku, int oldVal, int newVal, string reason)
     {
         await EnsureInitializedAsync();
-        var log = new AuditLog 
-        { 
-            BoxCode = boxCode, 
+        var log = new AuditLog
+        {
+            BoxCode = boxCode,
             Sku = sku,
             OldQuantity = oldVal,
             NewQuantity = newVal,
             Reason = reason
         };
         await _db!.InsertAsync(log);
-        
+
         System.Diagnostics.Debug.WriteLine($"[AUDIT ZAPISANO] {log.Description}");
     }
+
     public async Task InitializeAsync()
     {
         // Tutaj np. tworzysz tabele, jeśli nie istnieją
         // await Database.CreateTableAsync<Product>();
         // await Database.CreateTableAsync<Box>();
-        
+
         // Jeśli nie musisz nic robić, zostaw po prostu:
-        await Task.CompletedTask; 
-    }
-    public async Task GenerateBoxReport(Box box)
-    {
-        // Ustawienie licencji (dla społeczności/testów)
-        QuestPDF.Settings.License = LicenseType.Community;
-
-        var document = Document.Create(container =>
-        {
-            container.Page(page =>
-            {
-                page.Header().Text($"Raport Kartonu: {box.BoxCode}").FontSize(20).Bold();
-                page.Content().Table(table =>
-                {
-                    table.ColumnsDefinition(columns =>
-                    {
-                        columns.ConstantColumn(100);
-                        columns.RelativeColumn();
-                        columns.ConstantColumn(60);
-                    });
-
-                    table.Header(header =>
-                    {
-                        header.Cell().Text("Produkt");
-                        header.Cell().Text("Status");
-                        header.Cell().Text("Ilość");
-                    });
-
-                    foreach (var item in box.Items)
-                    {
-                        table.Cell().Text(item.ProductName);
-                        table.Cell().Text(item.StatusLabel);
-                        table.Cell().Text(item.ExpectedVsConfirmed);
-                    }
-                });
-                page.Footer().Text(x => { x.Span("Strona "); x.CurrentPageNumber(); });
-            });
-        });
-
-        // Zapis do pliku
-        string path = Path.Combine(FileSystem.AppDataDirectory, $"{box.BoxCode}_Raport.pdf");
-        document.GeneratePdf(path);
-    
-        await Shell.Current.DisplayAlert("Sukces", $"Raport PDF wygenerowany: {path}", "OK");
+        await Task.CompletedTask;
     }
 }

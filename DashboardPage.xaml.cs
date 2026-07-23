@@ -18,5 +18,4 @@ public partial class DashboardPage : ContentPage
     {
         await Shell.Current.GoToAsync(nameof(BoxSearchPage));
     }
-   
 }
