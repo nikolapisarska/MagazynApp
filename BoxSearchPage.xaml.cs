@@ -13,7 +13,7 @@ public partial class BoxSearchPage : ContentPage
         _viewModel = viewModel;
         BindingContext = _viewModel;
 
-        // Rejestracja wiadomości wymuszającej fokus z poziomu ViewModelu
+
         WeakReferenceMessenger.Default.Register<FocusScannerMessage>(this, (r, m) =>
         {
             Dispatcher.Dispatch(() => ScanEntry.Focus());
@@ -34,7 +34,7 @@ public partial class BoxSearchPage : ContentPage
     {
         base.OnDisappearing();
         
-        // Wyrejestrowanie komunikatu przy opuszczaniu strony
+
         WeakReferenceMessenger.Default.Unregister<FocusScannerMessage>(this);
     }
 }

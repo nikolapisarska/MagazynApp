@@ -4,7 +4,7 @@ namespace MagazynApp.Model;
 
 public class Product
 {
-    [PrimaryKey, AutoIncrement] // Ważne: AutoIncrement zapobiega nadpisywaniu
+    [PrimaryKey, AutoIncrement] 
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string CodeOrIdGraffiti { get; set; } = string.Empty;

@@ -4,13 +4,12 @@ namespace MagazynApp.Services;
 
 public interface IStorageService
 {
-    // Istniejące...
+  
     Task<Box?> GetBoxByCode(string boxCode);
     Task Update(Box box);
     Task UpdateBox(Box box); // Dodano
     Task LogAudit(string boxCode, string sku, int oldVal, int newVal, string reason); // Dodano
-    
-    // Reszta metod...
+
     Task<Product?> GetProductByCodeAsync(string code);
     Task<Box> GetOrCreateBoxAsync(string boxCode);
     Task SaveBoxAsync(Box box);

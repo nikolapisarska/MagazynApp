@@ -1,7 +1,5 @@
 using MagazynApp.Model;
 using SQLite;
-using PdfSharp.Pdf;
-using PdfSharp.Drawing;
 
 namespace MagazynApp.Services;
 public class StorageService : IStorageService
@@ -9,9 +7,7 @@ public class StorageService : IStorageService
     private SQLiteAsyncConnection? _db;
     private readonly string _dbPath = Path.Combine(FileSystem.AppDataDirectory, "Magazyn.db3");
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private bool _isInitialized = false;
-
-    // W StorageService.cs, zmień EnsureInitializedAsync na to:
+    private bool _isInitialized ;
     private async Task EnsureInitializedAsync()
     {
         if (_isInitialized) return;
@@ -143,11 +139,6 @@ public class StorageService : IStorageService
 
     public async Task InitializeAsync()
     {
-        // Tutaj np. tworzysz tabele, jeśli nie istnieją
-        // await Database.CreateTableAsync<Product>();
-        // await Database.CreateTableAsync<Box>();
-
-        // Jeśli nie musisz nic robić, zostaw po prostu:
         await Task.CompletedTask;
     }
 }

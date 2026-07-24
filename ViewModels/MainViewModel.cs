@@ -43,6 +43,7 @@ public partial class MainViewModel : ObservableObject
                               !(CurrentBox.IsClosed);
 
     public ObservableCollection<Item> CurrentItems { get; } = new();
+    
     public ObservableCollection<Box> FoundClosedBoxes { get; } = new();
 
     public MainViewModel(IStorageService storageService, NavigationState navState)
@@ -191,8 +192,7 @@ public partial class MainViewModel : ObservableObject
     public async Task SaveAndReturnAsync()
     {
         if (CurrentBox == null) return;
-
-        // UWAGA: Nie zmieniamy statusu na Closed. Status pozostaje nienaruszony (np. W kompletacji).
+        
         string codeToReturn = CurrentBox.BoxCode;
 
         await SaveCurrentBoxInternal();
@@ -339,4 +339,5 @@ public partial class MainViewModel : ObservableObject
         }
         UpdateListIndices();
     }
+    
 }

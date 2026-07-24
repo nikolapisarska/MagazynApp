@@ -51,14 +51,52 @@ public partial class Item : ObservableObject
         : (ConfirmedQuantity >= Quantity ? Colors.Green : Colors.White);
 
     // Pojedyncze wywołania powiadomień
-    partial void OnQuantityChanged(int value) => RefreshProperties();
-    partial void OnConfirmedQuantityChanged(int value) => RefreshProperties();
-    partial void OnMissingQtyChanged(int value) => RefreshProperties();
-    partial void OnDamagedQtyChanged(int value) => RefreshProperties();
+    // Właściwość pomocnicza do informowania o chęci usunięcia elementu
+    [Ignore] public bool ShouldBeDeleted { get; set; }
+
+    partial void OnQuantityChanged(int value)
+    {
+        if (value < 0)
+        {
+            _quantity = 0;
+            OnPropertyChanged(nameof(Quantity));
+        }
+        else if (value == 0)
+        {
+            ShouldBeDeleted = true;
+        }
+        else
+        {
+            // Po zmianie ilości resetujemy zgłoszone braki i uszkodzenia,
+            // ponieważ kontekst ilościowy uległ zmianie.
+            MissingQty = 0;
+            DamagedQty = 0;
+        
+            // Jeśli nie ma też notatek, wyłączamy flagę ostrzeżenia
+            if (string.IsNullOrEmpty(Notes))
+            {
+                IsFlagged = false;
+            }
+        }
+
+        RefreshProperties();
+    }
+
+    partial void OnMissingQtyChanged(int value)
+    {
+        if (value < 0) { _missingQty = 0; OnPropertyChanged(nameof(MissingQty)); }
+        RefreshProperties();
+    }
+
+    partial void OnDamagedQtyChanged(int value)
+    {
+        if (value < 0) { _damagedQty = 0; OnPropertyChanged(nameof(DamagedQty)); }
+        RefreshProperties();
+    }
     partial void OnIsMissingChanged(bool value) => RefreshProperties();
     partial void OnIsDamagedChanged(bool value) => RefreshProperties();
     partial void OnNotesChanged(string value) => RefreshProperties();
-    
+        partial void OnConfirmedQuantityChanged(int value) => RefreshProperties();
     public void RefreshProperties()
     {
         OnPropertyChanged(nameof(ExpectedVsConfirmed));
@@ -66,4 +104,5 @@ public partial class Item : ObservableObject
         OnPropertyChanged(nameof(StatusLabel));
         OnPropertyChanged(nameof(StatusColor));
     }
+    
 }

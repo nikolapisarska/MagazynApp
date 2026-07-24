@@ -106,10 +106,9 @@ public partial class SearchViewModel : ObservableObject
     {
         if (CurrentBox == null || !IsEditable) return;
     
-        // Ustawiamy flagę, że wrócimy tutaj z edycji
-        _navState.ShouldReturnToSearch = true; 
+           _navState.ShouldReturnToSearch = true; 
     
-        // Przechodzimy do strony komplementacji/dodawania
+      
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
     }
 
@@ -211,12 +210,30 @@ public partial class SearchViewModel : ObservableObject
         }
         else if (action == "Edytuj ilość")
         {
-            string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
+            string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość (0, aby usunąć)", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
             if (int.TryParse(result, out int newQty))
             {
-                item.Quantity = newQty;
+                // Zabezpieczenie przed liczbami ujemnymi
+                if (newQty < 0) newQty = 0;
+
+                int oldQty = item.Quantity;
+
+                if (newQty == 0)
+                {
+                    bool confirm = await Shell.Current.DisplayAlert("Usuwanie", $"Czy na pewno chcesz usunąć produkt {item.ProductName} z kartonu?", "Tak", "Anuluj");
+                    if (!confirm) return;
+
+                    CurrentBox!.Items.Remove(item);
+                    await _storageService.LogAudit(CurrentBox.BoxCode, item.ProductSku, oldQty, 0, "Usunięcie produktu (ilość 0)");
+                }
+                else
+                {
+                    item.Quantity = newQty;
+                    await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta ilości");
+                }
+
                 await _storageService.UpdateBox(CurrentBox!);
-                
+        
                 OnPropertyChanged(nameof(CanCloseBox));
                 await RefreshCurrentBox(CurrentBox!.BoxCode);
             }
@@ -224,17 +241,17 @@ public partial class SearchViewModel : ObservableObject
         else if (action == "Zgłoś braki" || action == "Zgłoś uszkodzenie")
         {
             string? result = await Shell.Current.DisplayPromptAsync(action, "Podaj ilość:", keyboard: Keyboard.Numeric);
-            if (int.TryParse(result, out int qty) && qty > 0)
+            if (int.TryParse(result, out int qty) && qty > 0) // Warunek qty > 0 blokuje zera i liczby ujemne
             {
                 int dostepne = item.Quantity - item.MissingQty - item.DamagedQty;
                 if (qty > dostepne) { await Shell.Current.DisplayAlert("Błąd", "Za duża ilość", "OK"); return; }
-                
+        
                 if (action == "Zgłoś braki") item.MissingQty += qty;
                 else item.DamagedQty += qty;
 
                 item.IsFlagged = true;
                 await _storageService.UpdateBox(CurrentBox!);
-                
+        
                 OnPropertyChanged(nameof(CanCloseBox));
                 await RefreshCurrentBox(CurrentBox!.BoxCode);
             }
@@ -271,7 +288,6 @@ public partial class SearchViewModel : ObservableObject
            return;
        }
 
-       // Przekazujemy 'this' jako SearchViewModel do popupa
        var popup = new VerificationSummaryPopup(CurrentBox, this);
        await Shell.Current.CurrentPage.ShowPopupAsync(popup);
    }
@@ -305,7 +321,7 @@ public partial class SearchViewModel : ObservableObject
     {
         if (CurrentBox == null) return;
 
-        // Zabezpieczenie: nie otwieramy kartonów wysłanych
+ 
         if (CurrentBox.Status == "Wysłany")
         {
             await Shell.Current.DisplayAlert("Błąd", "Nie można otworzyć kartonu, który został już wysłany.", "OK");

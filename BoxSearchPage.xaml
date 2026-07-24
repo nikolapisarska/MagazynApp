@@ -39,7 +39,7 @@
                        PlaceholderColor="Gray"
                        TextColor="White" 
                        BackgroundColor="#424242" />
-            <Label Text="{Binding StatusMessage}" TextColor="Yellow" FontSize="1" HorizontalOptions="Center"/>
+            <Label Text="{Binding StatusMessage}" TextColor="Yellow" FontSize="12" HorizontalOptions="Center"/>
         </VerticalStackLayout>
 
         <!-- Informacje o kartonie -->
