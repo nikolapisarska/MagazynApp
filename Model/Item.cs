@@ -21,27 +21,25 @@ public partial class Item : ObservableObject
     [Ignore] public int Lp { get; set; }
     [Ignore] public bool IsEven { get; set; }
 
-    // Właściwość obliczeniowa: x = Quantity - MissingQty - DamagedQty, y = Quantity
+   
     [Ignore] 
     public string ExpectedVsConfirmed => $"{Quantity - MissingQty - DamagedQty} / {Quantity}";
     
     [Ignore] 
-    public int RemainingToScan => Math.Max(0, Quantity - ConfirmedQuantity);
+    public int RemainingToScan => Math.Max(0, Quantity);
 
     [Ignore]
     public string StatusLabel 
     {
-        get 
+        get
         {
             var parts = new List<string>();
             if (MissingQty > 0) parts.Add($"BRAK ({MissingQty})");
             if (DamagedQty > 0) parts.Add($"USZK. ({DamagedQty})");
-            
+
             if (parts.Count > 0)
-                return $"{string.Join(" / ", parts)} | Do znalezienia: {MissingQty+DamagedQty}";
-            
-            if (ConfirmedQuantity > Quantity) return "NADMIAR!";
-            return ConfirmedQuantity >= Quantity ? "KOMPLETNE" : $"POZOSTAŁO: {RemainingToScan}";
+                return $"{string.Join(" / ", parts)} | Do znalezienia: {MissingQty + DamagedQty}";
+            return "KOMPLETNE";
         }
     }
 
@@ -50,8 +48,7 @@ public partial class Item : ObservableObject
         ? Colors.Orange
         : (ConfirmedQuantity >= Quantity ? Colors.Green : Colors.White);
 
-    // Pojedyncze wywołania powiadomień
-    // Właściwość pomocnicza do informowania o chęci usunięcia elementu
+
     [Ignore] public bool ShouldBeDeleted { get; set; }
 
     partial void OnQuantityChanged(int value)

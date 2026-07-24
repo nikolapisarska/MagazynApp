@@ -7,20 +7,19 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="#121212">
 
-    <Grid RowDefinitions="Auto, *" RowSpacing="0">
-        <Grid Grid.Row="0" HeightRequest="60" BackgroundColor="#1E1E1E" ColumnDefinitions="60, *, 60">
-            
-            <!-- Przycisk powrotu (strzałka) -->
+    <Grid RowDefinitions="60, *" RowSpacing="0">
+        <!-- Górny pasek stały -->
+        <Grid Grid.Row="0" BackgroundColor="#1E1E1E" ColumnDefinitions="60, *, 60">
             <Button Grid.Column="0" 
-                    Text="←" 
-                    FontSize="22" 
+                    Text="&#x2190;" 
+                    FontSize="24" 
                     TextColor="White" 
                     BackgroundColor="Transparent"
                     Command="{Binding GoBackCommand}"
                     VerticalOptions="Center" 
-                    HorizontalOptions="Center"/>
+                    HorizontalOptions="Center"
+                    Padding="0"/>
 
-            <!-- Tytuł -->
             <Label Grid.Column="1" 
                    Text="Panel Magazynowy"
                    TextColor="White" 
@@ -29,189 +28,193 @@
                    VerticalOptions="Center" 
                    HorizontalOptions="Center"/>
        </Grid>
-        <!-- ELASTYCZNY KONTENER RESPONSYWNY -->
-        <ScrollView Grid.Row="1" Padding="15">
-            <FlexLayout Direction="Row" 
-                        Wrap="Wrap" 
-                        JustifyContent="Center" 
-                        AlignItems="Start">
 
-                <!-- LEWA SEKCJA: PANEL SKANOWANIA -->
-                <Border StrokeShape="RoundRectangle 8" Padding="10" BackgroundColor="#2D2D2D" StrokeThickness="0"
-                        Margin="5"
-                        FlexLayout.Basis="{OnIdiom Desktop='400', Phone='100%'}"
-                        FlexLayout.Grow="1">
-                    <VerticalStackLayout Spacing="8">
-                        <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" 
-                               FontAttributes="Bold" 
-                               FontSize="14"
-                               TextColor="#FFB300">
-                            <Label.Triggers>
-                                <DataTrigger TargetType="Label" Binding="{Binding IsEditable}" Value="True">
-                                    <Setter Property="TextColor" Value="#FFB300" />
-                                </DataTrigger>
-                                <DataTrigger TargetType="Label" Binding="{Binding IsEditable}" Value="False">
-                                    <Setter Property="TextColor" Value="#E57373" />
-                                </DataTrigger>
-                            </Label.Triggers>
-                        </Label>
-                        <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#BDBDBD"/>
-                        
-                        <SearchBar x:Name="ScanEntry"
-                                   Text="{Binding ScanInput}"
-                                   SearchCommand="{Binding ProcessScanCommand}"
-                                   Placeholder="Zeskanuj kod..."
-                                   PlaceholderColor="Gray"
-                                   TextColor="White" 
-                                   BackgroundColor="#424242" />
+        <!-- Główna zawartość podzielona na kolumny (dla laptopa) lub wiersze (dla telefonu) przez FlexLayout -->
+        <FlexLayout Grid.Row="1" 
+                    Direction="Row" 
+                    Wrap="Wrap" 
+                    JustifyContent="Center" 
+                    AlignItems="Start"
+                    Padding="15">
 
-                        <!-- PRZESUNIĘTE KOMUNIKATY WYŻEJ -->
-                        <Label Text="{Binding StatusMessage}" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#81C784" Margin="0,5,0,0"/>
+            <!-- LEWA SEKCJA: PANEL SKANOWANIA -->
+            <Border StrokeShape="RoundRectangle 8" Padding="12" BackgroundColor="#1E1E1E" StrokeThickness="0"
+                    Margin="5"
+                    FlexLayout.Basis="{OnIdiom Desktop='380', Phone='100%'}"
+                    FlexLayout.Grow="1">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="{Binding CurrentBox.Status, StringFormat='Status: {0}'}" 
+                           FontAttributes="Bold" 
+                           FontSize="14">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsEditable}" Value="True">
+                                <Setter Property="TextColor" Value="#FFC107" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsEditable}" Value="False">
+                                <Setter Property="TextColor" Value="#EF5350" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    
+                    <Label Text="Zeskanuj kod produktu (Graffiti):" FontAttributes="Bold" FontSize="13" TextColor="#BDBDBD"/>
+                    
+                    <SearchBar x:Name="ScanEntry"
+                               Text="{Binding ScanInput}"
+                               SearchCommand="{Binding ProcessScanCommand}"
+                               Placeholder="Zeskanuj kod..."
+                               PlaceholderColor="#757575"
+                               TextColor="White" 
+                               BackgroundColor="#303030"
+                               HeightRequest="45"/>
 
-                        <Border IsVisible="{Binding IsProductVisible}" Padding="10" BackgroundColor="#333333" StrokeShape="RoundRectangle 5" StrokeThickness="0">
-                            <VerticalStackLayout>
-                                <Label Text="Znaleziony produkt:" FontSize="10" TextColor="Gray"/>
-                                <Label Text="{Binding FoundProduct.Name}" FontAttributes="Bold" TextColor="White"/>
-                                <Label Text="{Binding FoundProduct.CodeOrIdGraffiti, StringFormat='Kod: {0}'}" TextColor="#fcc821"/>
-                            </VerticalStackLayout>
-                        </Border>
+                    <Label Text="{Binding StatusMessage}" FontSize="14" FontAttributes="Bold" HorizontalOptions="Center" TextColor="#81C784" Margin="0,5,0,0"/>
 
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding FoundClosedBoxes}" Spacing="5">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="model:Box">
-                                    <Border Margin="0,2" Padding="10" BackgroundColor="#383838" StrokeShape="RoundRectangle 5" StrokeThickness="0">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=OpenBoxCommand}"
-                                                                  CommandParameter="{Binding .}"/>
-                                        </Border.GestureRecognizers>
-                                        <HorizontalStackLayout Spacing="10">
-                                            <Label Text="Karton:" FontAttributes="Bold" TextColor="White"/>
-                                            <Label Text="{Binding BoxCode}" TextColor="Yellow" FontAttributes="Bold"/>
-                                        </HorizontalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
+                    <Border IsVisible="{Binding IsProductVisible}" Padding="10" BackgroundColor="#2A2A2A" StrokeShape="RoundRectangle 6" StrokeThickness="0">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Znaleziony produkt:" FontSize="10" TextColor="#9E9E9E"/>
+                            <Label Text="{Binding FoundProduct.Name}" FontAttributes="Bold" TextColor="White"/>
+                            <Label Text="{Binding FoundProduct.CodeOrIdGraffiti, StringFormat='Kod: {0}'}" TextColor="#FFC107"/>
                         </VerticalStackLayout>
+                    </Border>
+
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding FoundClosedBoxes}" Spacing="5">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="model:Box">
+                                <Border Margin="0,2" Padding="10" BackgroundColor="#2A2A2A" StrokeShape="RoundRectangle 6" StrokeThickness="0">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=OpenBoxCommand}"
+                                                              CommandParameter="{Binding .}"/>
+                                    </Border.GestureRecognizers>
+                                    <HorizontalStackLayout Spacing="10">
+                                        <Label Text="Karton:" FontAttributes="Bold" TextColor="White"/>
+                                        <Label Text="{Binding BoxCode}" TextColor="#FFC107" FontAttributes="Bold"/>
+                                    </HorizontalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- PRAWA SEKCJA: ZAWARTOŚĆ KARTONU -->
+            <VerticalStackLayout Spacing="15" 
+                                 IsVisible="{Binding IsBoxOpen}"
+                                 Margin="5"
+                                 FlexLayout.Basis="{OnIdiom Desktop='650', Phone='100%'}"
+                                 FlexLayout.Grow="2">
+                
+                <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="24" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+
+                <Border StrokeShape="RoundRectangle 8" Padding="12" BackgroundColor="#1E1E1E" StrokeThickness="0">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Wymiary i waga (opcjonalne):" FontAttributes="Bold" FontSize="14" TextColor="#FFC107"/>
+                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Spacing="2">
+                                <Label Text="Waga (kg)" FontSize="12" TextColor="#BDBDBD"/>
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Weight, Mode=TwoWay}" Placeholder="0.00" TextColor="White" BackgroundColor="#303030" HeightRequest="40"/>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="2">
+                                <Label Text="Dł. (cm)" FontSize="12" TextColor="#BDBDBD"/>
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Length, Mode=TwoWay}" TextColor="White" BackgroundColor="#303030" HeightRequest="40"/>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="2">
+                                <Label Text="Szer. (cm)" FontSize="12" TextColor="#BDBDBD"/>
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Width, Mode=TwoWay}" TextColor="White" BackgroundColor="#303030" HeightRequest="40"/>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="2" Spacing="2">
+                                <Label Text="Wys. (cm)" FontSize="12" TextColor="#BDBDBD"/>
+                                <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Height, Mode=TwoWay}" TextColor="White" BackgroundColor="#303030" HeightRequest="40"/>
+                            </VerticalStackLayout>
+                        </Grid>
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- PRAWA SEKCJA: ZAWARTOŚĆ KARTONU -->
-                <VerticalStackLayout Spacing="15" 
-                                     IsVisible="{Binding IsBoxOpen}"
-                                     Margin="5"
-                                     FlexLayout.Basis="{OnIdiom Desktop='650', Phone='100%'}"
-                                     FlexLayout.Grow="2">
-                    
-                    <Label Text="{Binding CurrentBox.BoxCode, StringFormat='Karton: {0}'}" FontSize="24" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+                <Label Text="Zawartość:" FontAttributes="Bold" FontSize="14" Margin="0,5,0,-5" TextColor="#BDBDBD"/>
 
-                    <Border StrokeShape="RoundRectangle 8" Padding="10" BackgroundColor="#2D2D2D" StrokeThickness="0">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="Wymiary i waga (opcjonalne):" FontAttributes="Bold" FontSize="14" TextColor="#fcc821"/>
-                            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="8">
-                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Spacing="2">
-                                    <Label Text="Waga (kg)" FontSize="12" TextColor="#BDBDBD"/>
-                                    <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Weight, Mode=TwoWay}" Placeholder="0.00" TextColor="White" BackgroundColor="#424242"/>
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="2">
-                                    <Label Text="Dł. (cm)" FontSize="12" TextColor="#BDBDBD"/>
-                                    <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Length, Mode=TwoWay}" TextColor="White" BackgroundColor="#424242"/>
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="2">
-                                    <Label Text="Szer. (cm)" FontSize="12" TextColor="#BDBDBD"/>
-                                    <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Width, Mode=TwoWay}" TextColor="White" BackgroundColor="#424242"/>
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Row="1" Grid.Column="2" Spacing="2">
-                                    <Label Text="Wys. (cm)" FontSize="12" TextColor="#BDBDBD"/>
-                                    <Entry Keyboard="Numeric" Text="{Binding CurrentBox.Height, Mode=TwoWay}" TextColor="White" BackgroundColor="#424242"/>
-                                </VerticalStackLayout>
-                            </Grid>
-                        </VerticalStackLayout>
-                    </Border>
+                <!-- Kontener tabeli z nagłówkiem i kolekcją -->
+                <Border StrokeThickness="0" BackgroundColor="#1E1E1E" StrokeShape="RoundRectangle 8" Padding="0">
+                    <Grid RowDefinitions="42, *">
+                        <!-- Nagłówek tabeli -->
+                        <Grid Grid.Row="0" ColumnDefinitions="40,110,*,85" BackgroundColor="#FFC107">
+                            <Label Grid.Column="0" Text="LP" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                            <Label Grid.Column="1" Text="INDEX" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
+                            <Label Grid.Column="2" Text="NAZWA TOWARU" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
+                            <Label Grid.Column="3" Text="ILOŚĆ" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                        </Grid>
 
-                    <Label Text="Zawartość:" FontAttributes="Bold" FontSize="14" Margin="0,5,0,-5" TextColor="#BDBDBD"/>
+                        <!-- Lista elementów z własnym przewijaniem -->
+                        <CollectionView Grid.Row="1" ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton." HeightRequest="300">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="model:Item">
+                                    <Grid RowDefinitions="Auto,1" RowSpacing="0">
+                                        <Grid Grid.Row="0" ColumnDefinitions="40,110,*,80" Padding="0,8" BackgroundColor="#1E1E1E">
+                                            <Grid.Triggers>
+                                                <DataTrigger TargetType="Grid" Binding="{Binding IsEven}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="#252525"/>
+                                                </DataTrigger>
+                                            </Grid.Triggers>
 
-                    <Border StrokeThickness="0" BackgroundColor="#2B2B2B" StrokeShape="RoundRectangle 5">
-                        <VerticalStackLayout Spacing="0">
-                            <Grid ColumnDefinitions="40,120,*,85" HeightRequest="42" BackgroundColor="#fcc821">
-                                <Label Grid.Column="0" Text="LP" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                                <Label Grid.Column="1" Text="INDEX" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
-                                <Label Grid.Column="2" Text="NAZWA TOWARU" FontAttributes="Bold" TextColor="Black" Margin="10,0" VerticalTextAlignment="Center"/>
-                                <Label Grid.Column="3" Text="ILOŚĆ" FontAttributes="Bold" TextColor="Black" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                            </Grid>
+                                            <Label Grid.Column="0" Text="{Binding Lp}" TextColor="White" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                                            <Label Grid.Column="1" Text="{Binding ProductSku}" Margin="10,0" VerticalTextAlignment="Center" TextColor="White" LineBreakMode="TailTruncation"/>
+                                            <Label Grid.Column="2" Text="{Binding ProductName}" Margin="10,0" VerticalTextAlignment="Center" LineBreakMode="WordWrap" TextColor="White"/>
 
-                            <CollectionView ItemsSource="{Binding CurrentItems}" EmptyView="Pusty karton.">
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate x:DataType="model:Item">
-                                        <Grid RowDefinitions="70,1" RowSpacing="0">
-                                            <Grid Grid.Row="0" ColumnDefinitions="40,120,*,80" BackgroundColor="#2B2B2B">
-                                                <Grid.Triggers>
-                                                    <DataTrigger TargetType="Grid" Binding="{Binding IsEven}" Value="True">
-                                                        <Setter Property="BackgroundColor" Value="#363636"/>
-                                                    </DataTrigger>
-                                                </Grid.Triggers>
-
-                                                <Label Grid.Column="0" Text="{Binding Lp}" TextColor="White" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                                                <Label Grid.Column="1" Text="{Binding ProductSku}" Margin="10,0" VerticalTextAlignment="Center" TextColor="White"/>
-                                                <Label Grid.Column="2" Text="{Binding ProductName}" Margin="10,0" VerticalTextAlignment="Center" LineBreakMode="TailTruncation" TextColor="White"/>
-
-                                                <Grid Grid.Column="3" ColumnDefinitions="*, 30" VerticalOptions="Center">
-                                                    <Entry Text="{Binding Quantity, Mode=TwoWay}" 
-                                                           Keyboard="Numeric"
-                                                           TextColor="White"
-                                                           HorizontalTextAlignment="Center"
-                                                           VerticalTextAlignment="Center"
-                                                           BackgroundColor="Transparent"
-                                                           HeightRequest="40"
-                                                           Margin="0,0,5,0"/> 
-                                                    <!-- Przycisk usuwania (X) ukrywa się, gdy IsEditable jest false (karton zamknięty) -->
-                                                    <Button Grid.Column="1" 
-                                                            Text="X" 
-                                                            TextColor="Red"
-                                                            BackgroundColor="Transparent"
-                                                            FontSize="14"
-                                                            FontAttributes="Bold"
-                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=RemoveItemCommand}"
-                                                            CommandParameter="{Binding .}"
-                                                            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=IsEditable}"
-                                                            VerticalOptions="Center"
-                                                            HorizontalOptions="Center"
-                                                            Padding="0"
-                                                            WidthRequest="30"
-                                                            HeightRequest="30"/>
-                                                </Grid>
+                                            <Grid Grid.Column="3" ColumnDefinitions="*, 30" VerticalOptions="Center" HorizontalOptions="Center">
+                                                <Entry Text="{Binding Quantity, Mode=TwoWay}" 
+                                                       Keyboard="Numeric"
+                                                       TextColor="White"
+                                                       HorizontalTextAlignment="Center"
+                                                       VerticalTextAlignment="Center"
+                                                       BackgroundColor="#303030"
+                                                       HeightRequest="40"
+                                                       WidthRequest="45"
+                                                       Margin="0,0,5,0"/> 
+                                                <Button Grid.Column="1" 
+                                                        Text="✕" 
+                                                        TextColor="#EF5350"
+                                                        BackgroundColor="Transparent"
+                                                        FontSize="14"
+                                                        FontAttributes="Bold"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=RemoveItemCommand}"
+                                                        CommandParameter="{Binding .}"
+                                                        IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=IsEditable}"
+                                                        VerticalOptions="Center"
+                                                        HorizontalOptions="Center"
+                                                        Padding="0"
+                                                        WidthRequest="30"
+                                                        HeightRequest="30"/>
                                             </Grid>
-                                            <BoxView Grid.Row="1" HeightRequest="1" Color="#444"/>
                                         </Grid>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
-                        </VerticalStackLayout>
-                    </Border>
-                    
-                    <!-- Przycisk importu – ukrywa się, gdy karton jest zamknięty -->
-                    <Button Text="IMPORTUJ LISTĘ PRODUKTÓW" 
-                            Command="{Binding ImportItemsToBoxCommand}"
-                            IsVisible="{Binding IsEditable}"
-                            BackgroundColor="#2196F3" 
-                            TextColor="White" 
-                            FontSize="16" 
-                            CornerRadius="8" 
-                            HeightRequest="50"/>
-                            
-                    <!-- Przycisk zamknięcia i zapisu – ukrywa się, gdy karton jest zamknięty -->
-                    <Button Text="ZAPISZ KARTON" 
-                            Command="{Binding SaveAndReturnCommand}" 
-                            IsVisible="{Binding IsEditable}"
-                            BackgroundColor="#fcc821" 
-                            TextColor="Black" 
-                            FontAttributes="Bold" 
-                            FontSize="16" 
-                            CornerRadius="8" 
-                            HeightRequest="60" 
-                            Margin="0,10,0,20"/>
-                </VerticalStackLayout>
-           
-            </FlexLayout>
-        </ScrollView>
+                                        <BoxView Grid.Row="1" HeightRequest="1" Color="#2A2A2A"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+                </Border>
+                
+                <!-- Przyciski akcji -->
+                <Button Text="IMPORTUJ LISTĘ PRODUKTÓW" 
+                        Command="{Binding ImportItemsToBoxCommand}"
+                        IsVisible="{Binding IsEditable}"
+                        BackgroundColor="#1976D2" 
+                        TextColor="White" 
+                        FontSize="15" 
+                        FontAttributes="Bold"
+                        CornerRadius="6" 
+                        HeightRequest="50"/>
+                        
+                <Button Text="ZAPISZ KARTON" 
+                        Command="{Binding SaveAndReturnCommand}" 
+                        IsVisible="{Binding IsEditable}"
+                        BackgroundColor="#FFC107" 
+                        TextColor="Black" 
+                        FontAttributes="Bold" 
+                        FontSize="16" 
+                        CornerRadius="6" 
+                        HeightRequest="55" 
+                        Margin="0,5,0,20"/>
+            </VerticalStackLayout>
+       
+        </FlexLayout>
     </Grid>
 </ContentPage>
