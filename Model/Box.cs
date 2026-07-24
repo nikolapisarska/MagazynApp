@@ -2,6 +2,7 @@ using SQLite;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Text.Encodings.Web;
+
 namespace MagazynApp.Model;
 
 public partial class Box : ObservableObject
@@ -10,12 +11,34 @@ public partial class Box : ObservableObject
     public bool IsClosed { get; set; }
     
     [ObservableProperty] private string _status = "W kompletacji";
-    
-    // Pole wagi
-    [ObservableProperty] private double _weight = 0.0 ; 
-    [ObservableProperty] private double _width = 0.0;
-    [ObservableProperty] private double _height = 0.0;
-    [ObservableProperty] private double _length = 0.0;
+
+    private double _weight;
+    public double Weight
+    {
+        get => _weight;
+        set => SetProperty(ref _weight, Math.Abs(value));
+    }
+
+    private double _width;
+    public double Width
+    {
+        get => _width;
+        set => SetProperty(ref _width, Math.Abs(value));
+    }
+
+    private double _height;
+    public double Height
+    {
+        get => _height;
+        set => SetProperty(ref _height, Math.Abs(value));
+    }
+
+    private double _length;
+    public double Length
+    {
+        get => _length;
+        set => SetProperty(ref _length, Math.Abs(value));
+    }
 
     public string ItemsJson { get; set; } = "[]";
 
@@ -27,14 +50,10 @@ public partial class Box : ObservableObject
         ItemsJson = JsonSerializer.Serialize(Items);
     }
     
-    // Pobieranie danych z bazy (uwzględnia deserializację stanu, jeśli trzymasz go w JSON lub osobnych kolumnach)
     public void LoadAfterRead() 
     {
         Items = JsonSerializer.Deserialize<List<Item>>(ItemsJson) ?? new();
     }
-    
-    // Przygotowanie do zapisu - upewnij się, że wszystko jest zserializowane
-
 
     public void PrepareForSave() 
     {
@@ -45,5 +64,4 @@ public partial class Box : ObservableObject
     
         ItemsJson = JsonSerializer.Serialize(Items, options);
     }
-    
 }
