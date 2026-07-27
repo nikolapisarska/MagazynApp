@@ -227,6 +227,7 @@
                     </Border>
                     
                     <!-- Przyciski akcji -->
+                    <!-- Przyciski akcji -->
                     <Button Text="IMPORTUJ LISTĘ PRODUKTÓW" 
                             Command="{Binding ImportItemsToBoxCommand}"
                             IsVisible="{Binding IsEditable}"
@@ -236,12 +237,23 @@
                             FontAttributes="Bold"
                             CornerRadius="6" 
                             HeightRequest="48"/>
-                            
+
+                    <Button Text="PRZEJDŹ DO WERYFIKACJI" 
+                            Command="{Binding GoToVerificationCommand}"
+                            IsVisible="{Binding IsBoxOpen}"
+                            BackgroundColor="#FBC02D" 
+                            TextColor="Black" 
+                            FontSize="14" 
+                            FontAttributes="Bold"
+                            CornerRadius="6" 
+                            HeightRequest="48"
+                            Margin="0,4,0,0"/>
+        
                     <Button Text="ZAPISZ KARTON" 
                             Command="{Binding SaveAndReturnCommand}" 
                             IsVisible="{Binding IsEditable}"
-                            BackgroundColor="#FFC107" 
-                            TextColor="Black" 
+                            BackgroundColor="#388E3C" 
+                            TextColor="White" 
                             FontAttributes="Bold" 
                             FontSize="15" 
                             CornerRadius="6" 

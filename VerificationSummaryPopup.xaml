@@ -26,8 +26,16 @@
                        HorizontalOptions="Center"/>
             </Grid>
 
-            <!-- Lista produktów z weryfikacji -->
-            <CollectionView Grid.Row="1" ItemsSource="{Binding CurrentBox.Items}" Margin="12" BackgroundColor="Transparent">
+            <!-- Lista produktów z weryfikacji (tylko z problemami/brakami) -->
+            <CollectionView Grid.Row="1" ItemsSource="{Binding VerificationItems}" Margin="12" BackgroundColor="Transparent">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
+                        <Label Text="Wszystko jest w porządku! Brak braków i uszkodzeń." 
+                               TextColor="Green" 
+                               FontSize="14" 
+                               HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border Margin="0,4" 

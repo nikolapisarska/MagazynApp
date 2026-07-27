@@ -201,13 +201,6 @@ public partial class MainViewModel : ObservableObject
         CurrentBox = null; 
         CurrentItems.Clear();
         FoundProduct = null; 
-
-        if (_navState.ShouldReturnToSearch)
-        {
-            _navState.ShouldReturnToSearch = false; 
-            await Shell.Current.GoToAsync($"BoxSearchPage?ReloadBoxCode={codeToReturn}");
-        }
-        else
         {
             StatusMessage = $"Zapisano karton {codeToReturn}. Możesz kontynuować skanowanie.";
         }
@@ -339,5 +332,19 @@ public partial class MainViewModel : ObservableObject
         }
         UpdateListIndices();
     }
-    
+    [RelayCommand]
+    private async Task GoToVerificationAsync()
+    {
+        if (CurrentBox == null)
+        {
+            await Shell.Current.DisplayAlert("Błąd", "Brak aktywnego kartonu do weryfikacji.", "OK");
+            return;
+        }
+
+        // Zapisz aktualny stan przed przejściem
+        await SaveCurrentBoxInternal();
+
+        // Przejdź do widoku wyszukiwania/weryfikacji, przekazując kod kartonu
+        await Shell.Current.GoToAsync($"BoxSearchPage?ReloadBoxCode={CurrentBox.BoxCode}");
+    }
 }
