@@ -7,15 +7,15 @@ using MagazynApp.Model;
 using CommunityToolkit.Maui.Views; 
 using MagazynApp.Views;
 using SQLite;
+
 namespace MagazynApp.ViewModels;
 
 public class FocusScannerMessage { }
 
 [QueryProperty(nameof(ReloadBoxCode), "ReloadBoxCode")]
-public partial class SearchViewModel : ObservableObject
+public partial class SearchViewModel(IStorageService storageService) : ObservableObject
 {
-    private readonly IStorageService _storageService;
-    private readonly NavigationState _navState;
+    private readonly IStorageService _storageService = storageService;
 
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć";
@@ -26,45 +26,37 @@ public partial class SearchViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsEditable))]
     [NotifyPropertyChangedFor(nameof(HasBoxLoaded))] 
     [NotifyPropertyChangedFor(nameof(CanCloseBox))]
-    [NotifyPropertyChangedFor(nameof(VerificationItems))] // <- Automatycznie powiadamia widok o zmianie listy weryfikacyjnej
+    [NotifyPropertyChangedFor(nameof(VerificationItems))]
     private Box? _currentBox;
 
     public bool HasBoxLoaded => CurrentBox != null;
-    public ObservableCollection<string> RecentScans { get; private set; } = new();
+    public ObservableCollection<string> RecentScans { get; } = [];
     
     public bool IsEditable => CurrentBox != null && 
-                              CurrentBox.Status != "Wysłany" && 
-                              CurrentBox.Status != "Zamknięty" &&
-                              CurrentBox.Status != "Closed" &&
+                              CurrentBox.Status != BoxStatus.Sent && 
+                              CurrentBox.Status != BoxStatus.Closed &&
                               !CurrentBox.IsClosed;
 
-    // Przefiltrowana kolekcja elementów do okna weryfikacji
     [Ignore]
     public ObservableCollection<Item> VerificationItems
     {
         get
         {
-            if (CurrentBox?.Items == null) return new();
+            if (CurrentBox?.Items == null) return [];
             var filtered = CurrentBox.Items.Where(i => 
                 i.MissingQty > 0 || 
                 i.DamagedQty > 0 || 
                 !string.IsNullOrEmpty(i.Notes) ||
                 i.ConfirmedQuantity > i.Quantity
             );
-
-            return new ObservableCollection<Item>(filtered);
+            return [.. filtered];
         }
-    }
-    public SearchViewModel(IStorageService storageService, NavigationState navState)
-    {
-        _storageService = storageService;
-        _navState = navState;
     }
 
     public bool CanCloseBox => CurrentBox != null &&
-                               CurrentBox.Status != "Wysłany" &&
-                               CurrentBox.Status != "Zamknięty" &&
-                               CurrentBox.Items.Any() &&
+                               CurrentBox.Status != BoxStatus.Sent &&
+                               CurrentBox.Status != BoxStatus.Closed &&
+                               CurrentBox.Items.Count != 0 &&
                                CurrentBox.Items.All(i => 
                                    (i.ConfirmedQuantity == i.Quantity || i.ConfirmedQuantity == 0) && 
                                    i.Quantity > 0 &&
@@ -75,7 +67,7 @@ public partial class SearchViewModel : ObservableObject
     {
         if (!string.IsNullOrEmpty(value))
         {
-            RefreshCurrentBox(value);
+            _ = RefreshCurrentBox(value);
             ReloadBoxCode = null;
         }
     }
@@ -99,7 +91,6 @@ public partial class SearchViewModel : ObservableObject
     private void SubscribeToItemsChanges()
     {
         if (CurrentBox?.Items == null) return;
-
         foreach (var item in CurrentBox.Items)
         {
             item.PropertyChanged -= Item_PropertyChanged;
@@ -107,11 +98,7 @@ public partial class SearchViewModel : ObservableObject
         }
     }
 
-    private void Item_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        OnPropertyChanged(nameof(CanCloseBox));
-        OnPropertyChanged(nameof(VerificationItems)); // Odświeża listę błędów w locie przy zmianach w itemach
-    }
+    private void Item_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => NotifyStateChanged();
 
     private void NotifyStateChanged()
     {
@@ -123,9 +110,9 @@ public partial class SearchViewModel : ObservableObject
     [RelayCommand]
     private async Task AddProductAsync()
     {
-        if (CurrentBox == null || !IsEditable) return;
+        if (CurrentBox == null) return;
     
-        _navState.ShouldReturnToSearch = true; 
+        // Przechodzi do kompletacji bez względu na to, czy karton jest zamknięty, czy otwarty
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
     }
 
@@ -161,7 +148,7 @@ public partial class SearchViewModel : ObservableObject
             else
             {
                 IncrementProductQuantity(codeToSearch);
-                await _storageService.UpdateBox(CurrentBox);
+                await _storageService.UpdateBoxAsync(CurrentBox);
                 await RefreshCurrentBox(CurrentBox.BoxCode);
             }
         }
@@ -180,7 +167,7 @@ public partial class SearchViewModel : ObservableObject
 
                 if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
                 RecentScans.Insert(0, codeToSearch);
-                while (RecentScans.Count > 5) RecentScans.RemoveAt(5);
+                if (RecentScans.Count > 5) RecentScans.RemoveAt(5);
             }
         }
 
@@ -190,15 +177,16 @@ public partial class SearchViewModel : ObservableObject
     [RelayCommand]
     private async Task EditQuantity(Item item)
     {
-        if (!IsEditable) return;
+        if (!IsEditable || CurrentBox == null) return;
+        
         string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
         
         if (int.TryParse(result, out int newQty))
         {
             int oldQty = item.Quantity;
             item.Quantity = newQty;
-            await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
-            await _storageService.UpdateBox(CurrentBox);
+            await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
+            await _storageService.UpdateBoxAsync(CurrentBox);
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
@@ -206,7 +194,7 @@ public partial class SearchViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenIssuePopup(Item item)
     {
-        if (!IsEditable) return;
+        if (!IsEditable || CurrentBox == null) return;
 
         string? action = await Shell.Current.DisplayActionSheetAsync(
             $"Produkt: {item.ProductName}", "Anuluj", null, 
@@ -219,10 +207,8 @@ public partial class SearchViewModel : ObservableObject
             {
                 item.Notes = note;
                 item.IsFlagged = !string.IsNullOrEmpty(item.Notes) || item.MissingQty > 0 || item.DamagedQty > 0;
-                await _storageService.UpdateBox(CurrentBox!);
-                
-                NotifyStateChanged();
-                await RefreshCurrentBox(CurrentBox!.BoxCode);
+                await _storageService.UpdateBoxAsync(CurrentBox);
+                await RefreshCurrentBox(CurrentBox.BoxCode);
             }
         }
         else if (action == "Edytuj ilość")
@@ -230,43 +216,45 @@ public partial class SearchViewModel : ObservableObject
             string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość (0, aby usunąć)", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
             if (int.TryParse(result, out int newQty))
             {
-                if (newQty < 0) newQty = 0;
+                newQty = Math.Max(0, newQty);
                 int oldQty = item.Quantity;
 
                 if (newQty == 0)
                 {
-                    bool confirm = await Shell.Current.DisplayAlert("Usuwanie", $"Czy na pewno chcesz usunąć produkt {item.ProductName} z kartonu?", "Tak", "Anuluj");
+                    bool confirm = await Shell.Current.DisplayAlertAsync("Usuwanie", $"Czy na pewno chcesz usunąć produkt {item.ProductName} z kartonu?", "Tak", "Anuluj");
                     if (!confirm) return;
 
-                    CurrentBox!.Items.Remove(item);
-                    await _storageService.LogAudit(CurrentBox.BoxCode, item.ProductSku, oldQty, 0, "Usunięcie produktu (ilość 0)");
+                    CurrentBox.Items.Remove(item);
+                    await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.ProductSku, oldQty, 0, "Usunięcie produktu (ilość 0)");
                 }
                 else
                 {
                     item.Quantity = newQty;
-                    await _storageService.LogAudit(CurrentBox!.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta ilości");
+                    await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta ilości");
                 }
 
-                await _storageService.UpdateBox(CurrentBox!);
-                NotifyStateChanged();
-                await RefreshCurrentBox(CurrentBox!.BoxCode);
+                await _storageService.UpdateBoxAsync(CurrentBox);
+                await RefreshCurrentBox(CurrentBox.BoxCode);
             }
         }
-        else if (action == "Zgłoś braki" || action == "Zgłoś uszkodzenie")
+        else if (action is "Zgłoś braki" or "Zgłoś uszkodzenie")
         {
             string? result = await Shell.Current.DisplayPromptAsync(action, "Podaj ilość:", keyboard: Keyboard.Numeric);
             if (int.TryParse(result, out int qty) && qty > 0)
             {
                 int dostepne = item.Quantity - item.MissingQty - item.DamagedQty;
-                if (qty > dostepne) { await Shell.Current.DisplayAlert("Błąd", "Za duża ilość", "OK"); return; }
+                if (qty > dostepne) 
+                { 
+                    await Shell.Current.DisplayAlertAsync("Błąd", "Za duża ilość", "OK"); 
+                    return; 
+                }
         
                 if (action == "Zgłoś braki") item.MissingQty += qty;
                 else item.DamagedQty += qty;
 
                 item.IsFlagged = true;
-                await _storageService.UpdateBox(CurrentBox!);
-                NotifyStateChanged();
-                await RefreshCurrentBox(CurrentBox!.BoxCode);
+                await _storageService.UpdateBoxAsync(CurrentBox);
+                await RefreshCurrentBox(CurrentBox.BoxCode);
             }
         }
         else if (action == "Wyczyść zgłoszenia")
@@ -276,9 +264,8 @@ public partial class SearchViewModel : ObservableObject
             item.Notes = string.Empty;
             item.IsFlagged = false;
 
-            await _storageService.UpdateBox(CurrentBox!);
-            NotifyStateChanged();
-            await RefreshCurrentBox(CurrentBox!.BoxCode);
+            await _storageService.UpdateBoxAsync(CurrentBox);
+            await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
 
@@ -287,7 +274,7 @@ public partial class SearchViewModel : ObservableObject
     {
         if (CurrentBox == null)
         {
-            await Shell.Current.DisplayAlert("Błąd", "Brak otwartego kartonu.", "OK");
+            await Shell.Current.DisplayAlertAsync("Błąd", "Brak otwartego kartonu.", "OK");
             return;
         }
 
@@ -300,22 +287,20 @@ public partial class SearchViewModel : ObservableObject
     {
         if (CurrentBox == null || !CanCloseBox) return;
 
-        bool confirm = await Shell.Current.DisplayAlert(
+        bool confirm = await Shell.Current.DisplayAlertAsync(
             "Zamknięcie kartonu", 
             $"Czy na pewno chcesz zamknąć karton {CurrentBox.BoxCode}? Status zmieni się na 'Zamknięty'.", 
             "Tak", "Anuluj");
 
         if (confirm)
         {
-            CurrentBox.Status = "Zamknięty";
+            CurrentBox.Status = BoxStatus.Closed;
             CurrentBox.IsClosed = true; 
     
-            await _storageService.UpdateBox(CurrentBox);
-            await _storageService.LogAudit(CurrentBox.BoxCode, "SYSTEM", 0, 0, "Zamknięcie kartonu");
+            await _storageService.UpdateBoxAsync(CurrentBox);
+            await _storageService.LogAuditAsync(CurrentBox.BoxCode, "SYSTEM", 0, 0, "Zamknięcie kartonu");
 
             StatusMessage = $"Karton {CurrentBox.BoxCode} został zamknięty.";
-    
-            NotifyStateChanged();
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
@@ -325,36 +310,30 @@ public partial class SearchViewModel : ObservableObject
     {
         if (CurrentBox == null) return;
 
-        if (CurrentBox.Status == "Wysłany")
+        if (CurrentBox.Status == BoxStatus.Sent)
         {
-            await Shell.Current.DisplayAlert("Błąd", "Nie można otworzyć kartonu, który został już wysłany.", "OK");
+            await Shell.Current.DisplayAlertAsync("Błąd", "Nie można otworzyć kartonu, który został już wysłany.", "OK");
             return;
         }
 
-        bool confirm = await Shell.Current.DisplayAlert(
+        bool confirm = await Shell.Current.DisplayAlertAsync(
             "Ponowne otwarcie", 
             $"Czy na pewno chcesz otworzyć karton {CurrentBox.BoxCode}? Status zmieni się na 'w kompletacji'.", 
             "Tak", "Anuluj");
 
         if (confirm)
         {
-            CurrentBox.Status = "W kompletacji";
+            CurrentBox.Status = BoxStatus.InProgress;
             CurrentBox.IsClosed = false; 
 
-            await _storageService.UpdateBox(CurrentBox);
-            await _storageService.LogAudit(CurrentBox.BoxCode, "SYSTEM", 0, 0, "Ponowne otwarcie kartonu");
+            await _storageService.UpdateBoxAsync(CurrentBox);
+            await _storageService.LogAuditAsync(CurrentBox.BoxCode, "SYSTEM", 0, 0, "Ponowne otwarcie kartonu");
 
             StatusMessage = $"Karton {CurrentBox.BoxCode} został ponownie otwarty.";
-
-            NotifyStateChanged();
             await RefreshCurrentBox(CurrentBox.BoxCode);
         }
     }
 
     [RelayCommand]
-    private async Task GoBackToMainAsync()
-    {
-        await Shell.Current.GoToAsync("///DashboardPage");
-    }
-    
+    private async Task GoBackToMainAsync() => await Shell.Current.GoToAsync("///DashboardPage");
 }

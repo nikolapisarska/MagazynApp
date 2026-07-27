@@ -17,9 +17,6 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         
-        await _viewModel.InitializeLocalDatabaseAsync();
-        
-       
         await Task.Delay(250);
         ScanEntry.Focus();
     }

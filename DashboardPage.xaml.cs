@@ -1,8 +1,8 @@
-namespace MagazynApp;
-
 using MagazynApp.ViewModels;
 
-public partial class DashboardPage : ContentPage
+namespace MagazynApp;
+
+public partial class DashboardPage
 {
     public DashboardPage(MainViewModel viewModel)
     {
@@ -10,12 +10,25 @@ public partial class DashboardPage : ContentPage
         BindingContext = viewModel; 
     }
 
-    private async void OnStartPickingClicked(object sender, EventArgs e)
+    private void OnStartPickingClicked(object sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync(nameof(MainPage));
+        _ = SafeNavigateAsync(nameof(MainPage));
     }
-    private async void OnSearchClicked(object sender, EventArgs e)
+
+    private void OnSearchClicked(object sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync(nameof(BoxSearchPage));
+        _ = SafeNavigateAsync(nameof(BoxSearchPage));
+    }
+
+    private static async Task SafeNavigateAsync(string route)
+    {
+        try
+        {
+            await Shell.Current.GoToAsync(route);
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlertAsync("Błąd", $"Nie udało się przejść do strony: {ex.Message}", "OK");
+        }
     }
 }

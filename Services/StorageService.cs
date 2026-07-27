@@ -2,12 +2,14 @@ using MagazynApp.Model;
 using SQLite;
 
 namespace MagazynApp.Services;
+
 public class StorageService : IStorageService
 {
     private SQLiteAsyncConnection? _db;
     private readonly string _dbPath = Path.Combine(FileSystem.AppDataDirectory, "Magazyn.db3");
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private bool _isInitialized ;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private bool _isInitialized;
+
     private async Task EnsureInitializedAsync()
     {
         if (_isInitialized) return;
@@ -55,11 +57,9 @@ public class StorageService : IStorageService
     {
         await EnsureInitializedAsync();
         var box = await _db!.Table<Box>().FirstOrDefaultAsync(b => b.BoxCode == boxCode);
-        if (box != null) box.LoadAfterRead();
+        box?.LoadAfterRead();
         return box;
     }
-
-    public async Task<Box?> GetBoxByCode(string boxCode) => await GetBoxByCodeAsync(boxCode);
 
     public async Task<List<Box>> GetClosedBoxesContainingProductAsync(string productCode)
     {
@@ -85,11 +85,11 @@ public class StorageService : IStorageService
 
     public async Task<List<Box>> GetBoxesAsync() => await GetAllBoxesAsync();
 
-    public async Task ExportDataToFile(string fileName, string content)
+    public async Task ExportDataToFileAsync(string fileName, string content)
     {
         string path = Path.Combine(FileSystem.AppDataDirectory, fileName);
         await File.WriteAllTextAsync(path, content);
-        await Shell.Current.DisplayAlert("Sukces", $"Plik zapisano w: {path}", "OK");
+        await Shell.Current.DisplayAlertAsync("Sukces", $"Plik zapisano w: {path}", "OK");
     }
 
     public async Task SaveProductsAsync(List<Product> products)
@@ -111,17 +111,14 @@ public class StorageService : IStorageService
         }
     }
 
-    public async Task Update(Box box)
+    public async Task UpdateBoxAsync(Box box)
     {
         await EnsureInitializedAsync();
         box.PrepareForSave();
         await _db!.UpdateAsync(box);
     }
 
-    public async Task UpdateBox(Box box) => await Update(box);
-
-    // ZAKTUALIZOWANA METODA LOGOWANIA
-    public async Task LogAudit(string boxCode, string sku, int oldVal, int newVal, string reason)
+    public async Task LogAuditAsync(string boxCode, string sku, int oldVal, int newVal, string reason)
     {
         await EnsureInitializedAsync();
         var log = new AuditLog
@@ -139,6 +136,6 @@ public class StorageService : IStorageService
 
     public async Task InitializeAsync()
     {
-        await Task.CompletedTask;
+        await EnsureInitializedAsync();
     }
 }

@@ -9,19 +9,41 @@ public partial class Item : ObservableObject
     public string ProductSku { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
 
-    [ObservableProperty] private int _quantity;
-    [ObservableProperty] private int _confirmedQuantity;
-    [ObservableProperty] private int _missingQty;
-    [ObservableProperty] private int _damagedQty;
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(ExpectedVsConfirmed))]
+    [NotifyPropertyChangedFor(nameof(RemainingToScan))]
+    [NotifyPropertyChangedFor(nameof(StatusLabel))]
+    [NotifyPropertyChangedFor(nameof(StatusColor))]
+    private int _quantity;
+
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(StatusColor))]
+    private int _confirmedQuantity;
+
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(ExpectedVsConfirmed))]
+    [NotifyPropertyChangedFor(nameof(StatusLabel))]
+    [NotifyPropertyChangedFor(nameof(StatusColor))]
+    private int _missingQty;
+
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(ExpectedVsConfirmed))]
+    [NotifyPropertyChangedFor(nameof(StatusLabel))]
+    [NotifyPropertyChangedFor(nameof(StatusColor))]
+    private int _damagedQty;
+
     [ObservableProperty] private bool _isMissing;
     [ObservableProperty] private bool _isDamaged;
-    [ObservableProperty] private string _notes = string.Empty;
+    
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(StatusLabel))]
+    private string _notes = string.Empty;
+
     [ObservableProperty] private bool _isFlagged; 
 
     [Ignore] public int Lp { get; set; }
     [Ignore] public bool IsEven { get; set; }
 
-   
     [Ignore] 
     public string ExpectedVsConfirmed => $"{Quantity - MissingQty - DamagedQty} / {Quantity}";
     
@@ -48,7 +70,6 @@ public partial class Item : ObservableObject
         ? Colors.Orange
         : (ConfirmedQuantity >= Quantity ? Colors.Green : Colors.White);
 
-
     [Ignore] public bool ShouldBeDeleted { get; set; }
 
     partial void OnQuantityChanged(int value)
@@ -60,42 +81,23 @@ public partial class Item : ObservableObject
         }
         else
         {
-            // Po zmianie ilości resetujemy zgłoszone braki i uszkodzenia,
-            // ponieważ kontekst ilościowy uległ zmianie.
             MissingQty = 0;
             DamagedQty = 0;
         
-            // Jeśli nie ma też notatek, wyłączamy flagę ostrzeżenia
             if (string.IsNullOrEmpty(Notes))
             {
                 IsFlagged = false;
             }
         }
-
-        RefreshProperties();
     }
 
     partial void OnMissingQtyChanged(int value)
     {
         if (value < 0) { _missingQty = 0; OnPropertyChanged(nameof(MissingQty)); }
-        RefreshProperties();
     }
 
     partial void OnDamagedQtyChanged(int value)
     {
         if (value < 0) { _damagedQty = 0; OnPropertyChanged(nameof(DamagedQty)); }
-        RefreshProperties();
     }
-    partial void OnIsMissingChanged(bool value) => RefreshProperties();
-    partial void OnIsDamagedChanged(bool value) => RefreshProperties();
-    partial void OnNotesChanged(string value) => RefreshProperties();
-        partial void OnConfirmedQuantityChanged(int value) => RefreshProperties();
-    public void RefreshProperties()
-    {
-        OnPropertyChanged(nameof(ExpectedVsConfirmed));
-        OnPropertyChanged(nameof(RemainingToScan));
-        OnPropertyChanged(nameof(StatusLabel));
-        OnPropertyChanged(nameof(StatusColor));
-    }
-    
 }

@@ -21,7 +21,6 @@ public static class MauiProgram
        
         // 3. Uporządkowana rejestracja (usuń duplikaty)
         builder.Services.AddSingleton<IStorageService, StorageService>();
-        builder.Services.AddSingleton<NavigationState>();
 
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<MainViewModel>();

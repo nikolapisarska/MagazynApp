@@ -47,7 +47,6 @@
                         FlexLayout.Grow="1">
                     <VerticalStackLayout Spacing="12">
                         
-                        <!-- Status w formie nowoczesnej kapsułki -->
                         <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
                             <Label Text="Status:" FontSize="13" TextColor="#9E9E9E" VerticalOptions="Center"/>
                             <Border Padding="8, 3" StrokeShape="RoundRectangle 4" StrokeThickness="0">
@@ -97,28 +96,6 @@
                                 <Label Text="{Binding FoundProduct.CodeOrIdGraffiti, StringFormat='Kod: {0}'}" TextColor="#FFC107" FontSize="13"/>
                             </VerticalStackLayout>
                         </Border>
-
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding FoundClosedBoxes}" Spacing="6">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="model:Box">
-                                    <Border Margin="0,2" 
-                                            Padding="12" 
-                                            BackgroundColor="#252525" 
-                                            Stroke="#333333"
-                                            StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 6">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=OpenBoxCommand}"
-                                                                  CommandParameter="{Binding .}"/>
-                                        </Border.GestureRecognizers>
-                                        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                                            <Label Text="Karton:" FontAttributes="Bold" TextColor="#9E9E9E" VerticalOptions="Center"/>
-                                            <Label Text="{Binding BoxCode}" TextColor="#FFC107" FontAttributes="Bold" FontSize="15" VerticalOptions="Center"/>
-                                        </HorizontalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 
@@ -161,14 +138,13 @@
 
                     <Label Text="Zawartość:" FontAttributes="Bold" FontSize="13" Margin="0,4,0,-2" TextColor="#BDBDBD"/>
 
-                    <!-- Tabela produktów z zaokrąglonymi krawędziami -->
+                    <!-- Tabela produktów -->
                     <Border StrokeThickness="1" 
                             Stroke="#2A2A2A"
                             BackgroundColor="#1E1E1E" 
                             StrokeShape="RoundRectangle 8" 
                             Padding="0">
                         <VerticalStackLayout Spacing="0">
-                            <!-- Nagłówek tabeli z delikatniejszym żółtym odcieniem i lepszym wyśśietlaniem -->
                             <Grid ColumnDefinitions="40,110,*,85" HeightRequest="42" BackgroundColor="#E0A800">
                                 <Label Grid.Column="0" Text="LP" FontAttributes="Bold" TextColor="Black" FontSize="12" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
                                 <Label Grid.Column="1" Text="INDEX" FontAttributes="Bold" TextColor="Black" FontSize="12" Margin="10,0" VerticalTextAlignment="Center"/>
@@ -227,7 +203,6 @@
                     </Border>
                     
                     <!-- Przyciski akcji -->
-                    <!-- Przyciski akcji -->
                     <Button Text="IMPORTUJ LISTĘ PRODUKTÓW" 
                             Command="{Binding ImportItemsToBoxCommand}"
                             IsVisible="{Binding IsEditable}"
@@ -251,7 +226,6 @@
         
                     <Button Text="ZAPISZ KARTON" 
                             Command="{Binding SaveAndReturnCommand}" 
-                            IsVisible="{Binding IsEditable}"
                             BackgroundColor="#388E3C" 
                             TextColor="White" 
                             FontAttributes="Bold" 

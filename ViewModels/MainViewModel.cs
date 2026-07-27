@@ -9,14 +9,13 @@ using System.Text.Encodings.Web;
 namespace MagazynApp.ViewModels;
 
 [QueryProperty(nameof(BoxCodeToLoad), "BoxCode")]
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel(IStorageService storageService) : ObservableObject
 {
-    private readonly IStorageService _storageService;
-    private readonly NavigationState _navState;
+    private readonly IStorageService _storageService = storageService;
 
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
-    [ObservableProperty] private Product? _foundProduct;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsProductVisible))] private Product? _foundProduct;
     [ObservableProperty] private string? _boxCodeToLoad;
 
     public bool IsProductVisible => FoundProduct != null;
@@ -40,22 +39,9 @@ public partial class MainViewModel : ObservableObject
     public bool IsEditable => CurrentBox != null && 
                               CurrentBox.Status != BoxStatus.Sent && 
                               CurrentBox.Status != BoxStatus.Closed &&
-                              !(CurrentBox.IsClosed);
+                              !CurrentBox.IsClosed;
 
-    public ObservableCollection<Item> CurrentItems { get; } = new();
-    
-    public ObservableCollection<Box> FoundClosedBoxes { get; } = new();
-
-    public MainViewModel(IStorageService storageService, NavigationState navState)
-    {
-        _storageService = storageService;
-        _navState = navState;
-    }
-
-    partial void OnFoundProductChanged(Product? value)
-    {
-        OnPropertyChanged(nameof(IsProductVisible));
-    }
+    public ObservableCollection<Item> CurrentItems { get; } = [];
 
     partial void OnBoxCodeToLoadChanged(string? value)
     {
@@ -71,7 +57,7 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            string action = await Shell.Current.DisplayActionSheet("Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
+            string action = await Shell.Current.DisplayActionSheetAsync("Co chcesz wyeksportować?", "Anuluj", null, "Produkty", "Kartony");
             if (action == "Anuluj") return;
 
             var options = new JsonSerializerOptions 
@@ -85,12 +71,12 @@ public partial class MainViewModel : ObservableObject
                 : JsonSerializer.Serialize(await _storageService.GetBoxesAsync(), options); 
             
             string fileName = $"{action}_{DateTime.Now:yyyyMMddHHmm}.json";
-            
             string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
+            
             await File.WriteAllTextAsync(filePath, json);
             await Share.Default.RequestAsync(new ShareFileRequest { Title = $"Eksport: {action}", File = new ShareFile(filePath) });
         }
-        catch (Exception ex) { await Shell.Current.DisplayAlert("Błąd", ex.Message, "OK"); }
+        catch (Exception ex) { await Shell.Current.DisplayAlertAsync("Błąd", ex.Message, "OK"); }
     }
 
     [RelayCommand]
@@ -98,22 +84,25 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            string action = await Shell.Current.DisplayActionSheet("Co importujesz?", "Anuluj", null, "Produkty", "Kartony");
+            string action = await Shell.Current.DisplayActionSheetAsync("Co importujesz?", "Anuluj", null, "Produkty", "Kartony");
             if (action == "Anuluj") return;
+            
             var result = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Wybierz plik JSON" });
             if (result == null) return;
+            
             string jsonContent = await File.ReadAllTextAsync(result.FullPath);
-            if (action == "Produkty") await _storageService.SaveProductsAsync(JsonSerializer.Deserialize<List<Product>>(jsonContent) ?? new());
-            else await _storageService.SaveBoxesAsync(JsonSerializer.Deserialize<List<Box>>(jsonContent) ?? new());
-            await Shell.Current.DisplayAlert("Sukces", "Dane zaimportowane.", "OK");
+            if (action == "Produkty") 
+                await _storageService.SaveProductsAsync(JsonSerializer.Deserialize<List<Product>>(jsonContent) ?? []);
+            else 
+                await _storageService.SaveBoxesAsync(JsonSerializer.Deserialize<List<Box>>(jsonContent) ?? []);
+            
+            await Shell.Current.DisplayAlertAsync("Sukces", "Dane zaimportowane.", "OK");
         }
-        catch (Exception ex) { await Shell.Current.DisplayAlert("Błąd", ex.Message, "OK"); }
+        catch (Exception ex) { await Shell.Current.DisplayAlertAsync("Błąd", ex.Message, "OK"); }
     }
 
     [RelayCommand]
-    public async Task ProcessScanAsync() => await ExecuteProcessScanAsync();
-
-    public async Task ExecuteProcessScanAsync()
+    public async Task ProcessScanAsync()
     {
         if (string.IsNullOrWhiteSpace(ScanInput)) return;
         string scannedCode = ScanInput.Trim();
@@ -132,7 +121,10 @@ public partial class MainViewModel : ObservableObject
                 }
 
                 var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
-                if (existingItem != null) existingItem.Quantity += 1;
+                if (existingItem != null) 
+                {
+                    existingItem.Quantity += 1;
+                }
                 else
                 {
                     var newItem = new Item { ProductId = product.CodeOrIdGraffiti, ProductSku = product.CodeOrIdGraffiti, ProductName = product.Name, Quantity = 1 };
@@ -151,10 +143,7 @@ public partial class MainViewModel : ObservableObject
             }
             else
             {
-                FoundClosedBoxes.Clear();
-                var boxes = await _storageService.GetClosedBoxesContainingProductAsync(scannedCode);
-                foreach (var b in boxes) FoundClosedBoxes.Add(b);
-                StatusMessage = $"Znaleziono: {product.Name}. Zeskanuj karton, aby dodać.";
+                StatusMessage = $"Znaleziono: {product.Name}. Zeskanuj najpierw karton, aby dodać produkt.";
             }
             return;
         }
@@ -163,13 +152,8 @@ public partial class MainViewModel : ObservableObject
         if (existingBox != null)
         {
             await SaveCurrentBoxInternal();
-
-            CurrentBox = existingBox;
-            CurrentBox.LoadAfterRead();
-            ReloadItems(CurrentBox.Items);
-
-            FoundProduct = null;
-            StatusMessage = $"Przełączono do kartonu: {scannedCode}. Status: {CurrentBox.Status}";
+            SetCurrentBox(existingBox);
+            StatusMessage = $"Przełączono do kartonu: {scannedCode}. Status: {CurrentBox?.Status}";
             return;
         }
 
@@ -180,12 +164,8 @@ public partial class MainViewModel : ObservableObject
         }
 
         var box = await _storageService.GetOrCreateBoxAsync(scannedCode);
-        CurrentBox = box;
-        CurrentBox.LoadAfterRead();
-        ReloadItems(CurrentBox.Items);
-        
-        FoundProduct = null; 
-        StatusMessage = $"Otwarto karton: {scannedCode}. Status: {CurrentBox.Status}";
+        SetCurrentBox(box);
+        StatusMessage = $"Otwarto karton: {scannedCode}. Status: {CurrentBox?.Status}";
     }
 
     [RelayCommand]
@@ -194,16 +174,12 @@ public partial class MainViewModel : ObservableObject
         if (CurrentBox == null) return;
         
         string codeToReturn = CurrentBox.BoxCode;
-
         await SaveCurrentBoxInternal();
 
-        StatusMessage = $"Zapisano zmiany w kartonie {codeToReturn}.";
         CurrentBox = null; 
         CurrentItems.Clear();
         FoundProduct = null; 
-        {
-            StatusMessage = $"Zapisano karton {codeToReturn}. Możesz kontynuować skanowanie.";
-        }
+        StatusMessage = $"Zapisano karton {codeToReturn}. Możesz kontynuować skanowanie.";
     }
 
     [RelayCommand]
@@ -221,7 +197,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (CurrentBox != null) 
         { 
-            CurrentBox.Items = CurrentItems.ToList(); 
+            CurrentBox.Items = [.. CurrentItems]; 
             CurrentBox.PrepareForSave(); 
             await _storageService.SaveBoxAsync(CurrentBox); 
         }
@@ -241,32 +217,31 @@ public partial class MainViewModel : ObservableObject
         var box = await _storageService.GetBoxByCodeAsync(boxCode);
         if (box != null)
         {
-            CurrentBox = box;
-            CurrentBox.LoadAfterRead();
-            ReloadItems(CurrentBox.Items);
-            
-            FoundProduct = null; 
+            SetCurrentBox(box);
             StatusMessage = $"Otwarto karton: {boxCode}";
         }
     }
 
-    public async Task InitializeLocalDatabaseAsync() => await _storageService.InitializeAsync();
+    private void SetCurrentBox(Box box)
+    {
+        CurrentBox = box;
+        CurrentBox.LoadAfterRead();
+        ReloadItems(CurrentBox.Items);
+        FoundProduct = null;
+    }
     
     [RelayCommand]
     private async Task ImportItemsToBoxAsync()
     {
         if (CurrentBox == null || !IsEditable)
         {
-            await Shell.Current.DisplayAlert("Błąd", "Najpierw otwórz edytowalny karton!", "OK");
+            await Shell.Current.DisplayAlertAsync("Błąd", "Najpierw otwórz edytowalny karton!", "OK");
             return;
         }
 
         try
         {
-            var result = await FilePicker.Default.PickAsync(new PickOptions { 
-                PickerTitle = "Wybierz plik z listą produktów (JSON)" 
-            });
-        
+            var result = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = "Wybierz plik z listą produktów (JSON)" });
             if (result == null) return;
 
             string jsonContent = await File.ReadAllTextAsync(result.FullPath);
@@ -278,41 +253,19 @@ public partial class MainViewModel : ObservableObject
                 {
                     var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == importedItem.ProductSku);
                     if (existingItem != null)
-                    {
                         existingItem.Quantity += importedItem.Quantity;
-                    }
                     else
-                    {
                         CurrentItems.Add(importedItem);
-                    }
                 }
             
                 UpdateListIndices();
                 await SaveCurrentBoxInternal();
-                await Shell.Current.DisplayAlert("Sukces", "Produkty zostały zaimportowane.", "OK");
+                await Shell.Current.DisplayAlertAsync("Sukces", "Produkty zostały zaimportowane.", "OK");
             }
         }
         catch (Exception ex)
         {
-            await Shell.Current.DisplayAlert("Błąd importu", ex.Message, "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task OpenBoxAsync(Box? box)
-    {
-        if (box == null) return;
-
-        var fullBox = await _storageService.GetBoxByCodeAsync(box.BoxCode);
-        if (fullBox != null)
-        {
-            CurrentBox = fullBox;
-            CurrentBox.LoadAfterRead();
-            ReloadItems(CurrentBox.Items);
-            
-            FoundProduct = null; 
-            StatusMessage = $"Otwarto karton: {box.BoxCode}";
-            FoundClosedBoxes.Clear();
+            await Shell.Current.DisplayAlertAsync("Błąd importu", ex.Message, "OK");
         }
     }
 
@@ -326,25 +279,20 @@ public partial class MainViewModel : ObservableObject
     private void ReloadItems(IEnumerable<Item> newItems)
     {
         CurrentItems.Clear();
-        foreach (var item in newItems)
-        {
-            CurrentItems.Add(item);
-        }
+        foreach (var item in newItems) CurrentItems.Add(item);
         UpdateListIndices();
     }
+
     [RelayCommand]
     private async Task GoToVerificationAsync()
     {
         if (CurrentBox == null)
         {
-            await Shell.Current.DisplayAlert("Błąd", "Brak aktywnego kartonu do weryfikacji.", "OK");
+            await Shell.Current.DisplayAlertAsync("Błąd", "Brak aktywnego kartonu do weryfikacji.", "OK");
             return;
         }
 
-        // Zapisz aktualny stan przed przejściem
         await SaveCurrentBoxInternal();
-
-        // Przejdź do widoku wyszukiwania/weryfikacji, przekazując kod kartonu
         await Shell.Current.GoToAsync($"BoxSearchPage?ReloadBoxCode={CurrentBox.BoxCode}");
     }
 }

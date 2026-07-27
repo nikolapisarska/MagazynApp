@@ -10,7 +10,7 @@ public partial class Box : ObservableObject
     [PrimaryKey] public string BoxCode { get; set; } = string.Empty;
     public bool IsClosed { get; set; }
     
-    [ObservableProperty] private string _status = "W kompletacji";
+    [ObservableProperty] private string _status = BoxStatus.InProgress;
 
     private double _weight;
     public double Weight
@@ -44,11 +44,6 @@ public partial class Box : ObservableObject
 
     [Ignore] 
     public List<Item> Items { get; set; } = new();
-    
-    public void SyncItems() 
-    {
-        ItemsJson = JsonSerializer.Serialize(Items);
-    }
     
     public void LoadAfterRead() 
     {
