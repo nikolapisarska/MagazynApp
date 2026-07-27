@@ -1,12 +1,11 @@
 using CommunityToolkit.Maui.Views;
-using MagazynApp.Model;
 using MagazynApp.ViewModels;
 
 namespace MagazynApp.Views;
 
 public partial class VerificationSummaryPopup : Popup
 {
-    public VerificationSummaryPopup(Box box, SearchViewModel viewModel)
+    public VerificationSummaryPopup(SearchViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

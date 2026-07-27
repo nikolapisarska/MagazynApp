@@ -34,7 +34,7 @@
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.magazynapp</ApplicationId>
-
+		<ApplicationId>com.nikolina.meow4</ApplicationId>
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>

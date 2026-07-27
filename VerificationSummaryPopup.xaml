@@ -2,6 +2,7 @@
 <toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+               xmlns:model="clr-namespace:MagazynApp.Model"
                x:Class="MagazynApp.Views.VerificationSummaryPopup"
                Color="Transparent">
 
@@ -26,7 +27,7 @@
                        HorizontalOptions="Center"/>
             </Grid>
 
-            <!-- Lista produktów z weryfikacji (tylko z problemami/brakami) -->
+            <!-- Lista produktów z weryfikacji -->
             <CollectionView Grid.Row="1" ItemsSource="{Binding VerificationItems}" Margin="12" BackgroundColor="Transparent">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
@@ -36,8 +37,9 @@
                                HorizontalTextAlignment="Center"/>
                     </VerticalStackLayout>
                 </CollectionView.EmptyView>
+                
                 <CollectionView.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="model:Item">
                         <Border Margin="0,4" 
                                 Padding="12" 
                                 StrokeShape="RoundRectangle 8" 
@@ -51,8 +53,16 @@
                                 <Label Text="{Binding Notes, StringFormat='Uwagi: {0}'}" 
                                        FontSize="11" 
                                        TextColor="#BDBDBD" 
-                                       FontAttributes="Italic"
-                                       IsVisible="{Binding HasNotes}"/>
+                                       FontAttributes="Italic">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Notes}" Value="">
+                                            <Setter Property="IsVisible" Value="False"/>
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Notes}" Value="{x:Null}">
+                                            <Setter Property="IsVisible" Value="False"/>
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>

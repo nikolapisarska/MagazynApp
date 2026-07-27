@@ -30,7 +30,7 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
     private Box? _currentBox;
 
     public bool HasBoxLoaded => CurrentBox != null;
-    public ObservableCollection<string> RecentScans { get; } = [];
+    public ObservableCollection<string> RecentScans { get; private set; } = [];
     
     public bool IsEditable => CurrentBox != null && 
                               CurrentBox.Status != BoxStatus.Sent && 
@@ -112,7 +112,6 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
     {
         if (CurrentBox == null) return;
     
-        // Przechodzi do kompletacji bez względu na to, czy karton jest zamknięty, czy otwarty
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
     }
 
@@ -278,7 +277,8 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
             return;
         }
 
-        var popup = new VerificationSummaryPopup(CurrentBox, this);
+        // Poprawiono: przekazujemy tylko 'this' (ViewModel)
+        var popup = new VerificationSummaryPopup(this);
         await Shell.Current.CurrentPage.ShowPopupAsync(popup);
     }
 

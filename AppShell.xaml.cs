@@ -1,8 +1,7 @@
-﻿using Microsoft.Maui.Controls;
-
+﻿
 namespace MagazynApp;
 
-public partial class AppShell : Shell
+public partial class AppShell 
 {
     public AppShell()
     {

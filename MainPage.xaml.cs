@@ -2,15 +2,12 @@
 
 namespace MagazynApp;
 
-public partial class MainPage : ContentPage
+public partial class MainPage 
 {
-    private readonly MainViewModel _viewModel;
-
     public MainPage(MainViewModel viewModel)
     {
         InitializeComponent();
-        _viewModel = viewModel;
-        BindingContext = _viewModel;
+        BindingContext = viewModel;
     }
 
     protected override async void OnAppearing()
