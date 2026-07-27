@@ -185,7 +185,7 @@
 
                             <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                                 <Button Grid.Column="0" 
-                                        Text="Dodaj" 
+                                        Text="Przejdź do Komplementacj" 
                                         Command="{Binding AddProductCommand}" 
                                         IsVisible="{Binding IsEditable}"
                                         BackgroundColor="#388E3C" 
@@ -262,7 +262,7 @@
                             <VerticalStackLayout Grid.Row="1" Spacing="12" VerticalOptions="Start">
                                 <Label Text="Akcje" TextColor="#757575" FontSize="12" FontAttributes="Bold"/>
                                 
-                                <Button Text="Dodaj Produkt" Command="{Binding AddProductCommand}" IsVisible="{Binding IsEditable}" BackgroundColor="#388E3C" TextColor="White" HeightRequest="50" FontAttributes="Bold" CornerRadius="5"/>
+                                <Button Text="Przejdź do Komplementacji" Command="{Binding AddProductCommand}" IsVisible="{Binding IsEditable}" BackgroundColor="#388E3C" TextColor="White" HeightRequest="50" FontAttributes="Bold" CornerRadius="5"/>
                                 <Button Text="Weryfikuj Zgodność" Command="{Binding StartVerificationCommand}" BackgroundColor="#FBC02D" TextColor="Black" HeightRequest="50" FontAttributes="Bold" CornerRadius="5"/>
                                 <Button Text="Otwórz Ponownie" Command="{Binding ReopenBoxCommand}" IsVisible="{Binding CurrentBox.IsClosed}" BackgroundColor="#F57C00" TextColor="Black" HeightRequest="50" FontAttributes="Bold" CornerRadius="5"/>
                                 <Button Text="Zamknij Karton" Command="{Binding CloseBoxCommand}" IsEnabled="{Binding CanCloseBox}" BackgroundColor="#1976D2" TextColor="White" HeightRequest="50" FontAttributes="Bold" CornerRadius="5">
