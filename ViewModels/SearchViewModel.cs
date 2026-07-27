@@ -352,4 +352,5 @@ public partial class SearchViewModel : ObservableObject
     {
         await Shell.Current.GoToAsync("///DashboardPage");
     }
+    
 }

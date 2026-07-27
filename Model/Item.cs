@@ -53,14 +53,10 @@ public partial class Item : ObservableObject
 
     partial void OnQuantityChanged(int value)
     {
-        if (value < 0)
+        if (value <= 0)
         {
-            _quantity = 0;
+            _quantity = 1;
             OnPropertyChanged(nameof(Quantity));
-        }
-        else if (value == 0)
-        {
-            ShouldBeDeleted = true;
         }
         else
         {

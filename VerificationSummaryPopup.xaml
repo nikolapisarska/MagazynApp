@@ -1,45 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
 <toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
                x:Class="MagazynApp.Views.VerificationSummaryPopup"
                Color="Transparent">
 
-    <!-- Kontener z zaokrąglonymi rogami -->
-    <Border BackgroundColor="#F5F5F5" 
+    <!-- Kontener z zaokrąglonymi rogami w ciemnym motywie -->
+    <Border BackgroundColor="#1E1E1E" 
+            Stroke="#333333"
+            StrokeThickness="1"
             StrokeShape="RoundRectangle 20" 
-            StrokeThickness="0"
             WidthRequest="400" 
             HeightRequest="700" 
             Padding="0">
         
         <Grid RowDefinitions="Auto, *, Auto">
+            
             <!-- Nagłówek -->
-            <BoxView Grid.Row="0" Color="#1E1E1E" HeightRequest="60" VerticalOptions="Start"/>
-            <Label Grid.Row="0" Text="Podsumowanie Weryfikacji" TextColor="White" 
-                   FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+            <Grid Grid.Row="0" BackgroundColor="#252525" HeightRequest="60" ColumnDefinitions="*">
+                <Label Text="Podsumowanie Weryfikacji" 
+                       TextColor="White" 
+                       FontSize="18" 
+                       FontAttributes="Bold" 
+                       VerticalOptions="Center" 
+                       HorizontalOptions="Center"/>
+            </Grid>
 
-            <!-- Zmieniono powiązanie z Items na CurrentBox.Items, ponieważ kontekstem jest teraz SearchViewModel -->
-            <CollectionView Grid.Row="1" ItemsSource="{Binding CurrentBox.Items}" Margin="15">
+            <!-- Lista produktów z weryfikacji -->
+            <CollectionView Grid.Row="1" ItemsSource="{Binding CurrentBox.Items}" Margin="12" BackgroundColor="Transparent">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="0,5" Padding="10" CornerRadius="8" HasShadow="False" BorderColor="#DDD">
-                            <VerticalStackLayout Spacing="2">
-                                <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="16"/>
-                                <Label Text="{Binding ProductId}"  FontSize="14"/>
-                                <Label Text="{Binding StatusLabel}" FontSize="13" TextColor="{Binding StatusColor}"/>
+                        <Border Margin="0,4" 
+                                Padding="12" 
+                                StrokeShape="RoundRectangle 8" 
+                                BackgroundColor="#2A2A2A" 
+                                Stroke="#3A3A3A"
+                                StrokeThickness="1">
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="15" TextColor="White"/>
+                                <Label Text="{Binding ProductId}" FontSize="12" TextColor="#9E9E9E"/>
+                                <Label Text="{Binding StatusLabel}" FontSize="12" TextColor="{Binding StatusColor}" FontAttributes="Bold"/>
                                 <Label Text="{Binding Notes, StringFormat='Uwagi: {0}'}" 
-                                       FontSize="12" TextColor="Gray" FontAttributes="Italic"
+                                       FontSize="11" 
+                                       TextColor="#BDBDBD" 
+                                       FontAttributes="Italic"
                                        IsVisible="{Binding HasNotes}"/>
                             </VerticalStackLayout>
-                        </Frame>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <!-- Stopka z przyciskami -->
-            <HorizontalStackLayout Grid.Row="2" Spacing="10" Padding="20" HorizontalOptions="Center">
-                <Button Text="Zamknij" Clicked="OnCloseClicked" WidthRequest="150" BackgroundColor="#E0E0E0"/>
+            <!-- Stopka z przyciskiem zamykającym -->
+            <HorizontalStackLayout Grid.Row="2" Spacing="10" Padding="15" HorizontalOptions="Center" BackgroundColor="#1E1E1E">
+                <Button Text="Zamknij" 
+                        Clicked="OnCloseClicked" 
+                        WidthRequest="160" 
+                        HeightRequest="45"
+                        BackgroundColor="#303030" 
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        CornerRadius="6"/>
             </HorizontalStackLayout>
+            
         </Grid>
     </Border>
 </toolkit:Popup>
