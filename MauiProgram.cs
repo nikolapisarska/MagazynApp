@@ -1,10 +1,15 @@
-﻿using CommunityToolkit.Maui; // 1. Dodaj ten namespace
+﻿using CommunityToolkit.Maui; 
 using MagazynApp.Services;
 using MagazynApp.ViewModels;
 using Microsoft.Extensions.Logging;
 
 namespace MagazynApp;
 
+/// <summary>
+/// Klasa konfiguracyjna aplikacji MAUI. Odpowiada za rejestrację czcionek, 
+/// bibliotek zewnętrznych (Community Toolkit) oraz wstrzykiwanie zależności (DI) 
+/// dla widoków (Views) i modeli widoków (ViewModels).
+/// </summary>
 public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
@@ -12,27 +17,27 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            .UseMauiCommunityToolkit() // 2. DODAJ TO
+            .UseMauiCommunityToolkit() // Rejestracja pakietu rozszerzeń MAUI Community Toolkit
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
        
-        // 3. Uporządkowana rejestracja (usuń duplikaty)
+        // Rejestracja serwisu bazy danych jako Singleton (jedna instancja w całej aplikacji)
         builder.Services.AddSingleton<IStorageService, StorageService>();
 
+        // Rejestracja stron oraz ich ViewModeli (wzorzec MVVM) jako obiekty Transient (tworzone na żądanie)
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<MainViewModel>();
         
         builder.Services.AddTransient<BoxSearchPage>();
         builder.Services.AddTransient<SearchViewModel>();
 
-        // W MauiProgram.cs
         builder.Services.AddTransient<DashboardPage>();
         
 #if DEBUG
-        builder.Logging.AddDebug();
+        builder.Logging.AddDebug(); // Włączenie logowania debugowania w trybie testowym
 #endif
         
         return builder.Build();

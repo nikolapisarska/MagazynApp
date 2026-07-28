@@ -3,11 +3,14 @@ using SQLite;
 
 namespace MagazynApp.Model;
 
+/// <summary>
+/// Reprezentuje pojedynczą pozycję (produkt i jego ilość) wewnątrz konkretnego kartonu.
+/// Dziedziczy po ObservableObject (CommunityToolkit.Mvvm) w celu automatycznego powiadamiania UI o zmianach.
+/// </summary>
 public partial class Item : ObservableObject
 {
-    public string ProductId { get; set; } = string.Empty;
-    public string ProductSku { get; set; } = string.Empty;
-    public string ProductName { get; set; } = string.Empty;
+    [ObservableProperty] private string _codeOrIdGraffiti = string.Empty;
+    [ObservableProperty] private string _productName = string.Empty;
 
     [ObservableProperty] 
     [NotifyPropertyChangedFor(nameof(ExpectedVsConfirmed))]
@@ -41,6 +44,7 @@ public partial class Item : ObservableObject
 
     [ObservableProperty] private bool _isFlagged; 
 
+    // Ignorowane przez SQLite (właściwości pomocnicze dla interfejsu użytkownika)
     [Ignore] public int Lp { get; set; }
     [Ignore] public bool IsEven { get; set; }
 
@@ -72,6 +76,7 @@ public partial class Item : ObservableObject
 
     [Ignore] public bool ShouldBeDeleted { get; set; }
 
+    /// <summary>Walidacja i reakcja na zmianę ilości produktu w pozycji.</summary>
     partial void OnQuantityChanged(int value)
     {
         if (value <= 0)

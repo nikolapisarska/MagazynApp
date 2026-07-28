@@ -6,12 +6,15 @@ using MagazynApp.Services;
 using MagazynApp.Model;
 using CommunityToolkit.Maui.Views; 
 using MagazynApp.Views;
-using SQLite;
 
 namespace MagazynApp.ViewModels;
 
 public class FocusScannerMessage { }
 
+/// <summary>
+/// ViewModel odpowiedzialny za ekran weryfikacji, wyszukiwania kartonów, 
+/// obsługę braków, uszkodzeń, notatek oraz zamykanie/ponowne otwieranie kartonów.
+/// </summary>
 [QueryProperty(nameof(ReloadBoxCode), "ReloadBoxCode")]
 public partial class SearchViewModel(IStorageService storageService) : ObservableObject
 {
@@ -20,13 +23,11 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
     [ObservableProperty] private string _scanInput = string.Empty;
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć";
     [ObservableProperty] private string? _reloadBoxCode;
-    [ObservableProperty] private bool _isVerificationMode;
 
     [ObservableProperty] 
     [NotifyPropertyChangedFor(nameof(IsEditable))]
     [NotifyPropertyChangedFor(nameof(HasBoxLoaded))] 
     [NotifyPropertyChangedFor(nameof(CanCloseBox))]
-    [NotifyPropertyChangedFor(nameof(VerificationItems))]
     private Box? _currentBox;
 
     public bool HasBoxLoaded => CurrentBox != null;
@@ -37,22 +38,7 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
                               CurrentBox.Status != BoxStatus.Closed &&
                               !CurrentBox.IsClosed;
 
-    [Ignore]
-    public ObservableCollection<Item> VerificationItems
-    {
-        get
-        {
-            if (CurrentBox?.Items == null) return [];
-            var filtered = CurrentBox.Items.Where(i => 
-                i.MissingQty > 0 || 
-                i.DamagedQty > 0 || 
-                !string.IsNullOrEmpty(i.Notes) ||
-                i.ConfirmedQuantity > i.Quantity
-            );
-            return [.. filtered];
-        }
-    }
-
+    /// <summary>Określa, czy karton spełnia warunki pozwalające na jego zamknięcie.</summary>
     public bool CanCloseBox => CurrentBox != null &&
                                CurrentBox.Status != BoxStatus.Sent &&
                                CurrentBox.Status != BoxStatus.Closed &&
@@ -72,6 +58,7 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
         }
     }
 
+    /// <summary>Odświeża dane aktywnego kartonu z bazy danych i odświeża subskrypcje powiadomień.</summary>
     private async Task RefreshCurrentBox(string boxCode)
     {
         var updatedBox = await _storageService.GetBoxByCodeAsync(boxCode);
@@ -104,7 +91,6 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
     {
         OnPropertyChanged(nameof(CanCloseBox));
         OnPropertyChanged(nameof(IsEditable));
-        OnPropertyChanged(nameof(VerificationItems));
     }
 
     [RelayCommand]
@@ -115,22 +101,7 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
         await Shell.Current.GoToAsync($"{nameof(MainPage)}?BoxCode={CurrentBox.BoxCode}");
     }
 
-    private void IncrementProductQuantity(string sku)
-    {
-        if (CurrentBox == null || !IsEditable) return;
-
-        var item = CurrentBox.Items.FirstOrDefault(i => i.ProductSku == sku);
-        if (item != null)
-        {
-            item.ConfirmedQuantity++;
-            StatusMessage = $"Zwiększono {item.ProductName}: {item.ConfirmedQuantity}/{item.Quantity}";
-        }
-        else
-        {
-            StatusMessage = $"Błąd: Produkt {sku} nie istnieje w tym kartonie.";
-        }
-    }
-
+    /// <summary>Przetwarza skanowanie w widoku wyszukiwania kartonu.</summary>
     [RelayCommand]
     private async Task ProcessScanAsync()
     {
@@ -138,58 +109,26 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
         string codeToSearch = ScanInput.Trim();
         ScanInput = string.Empty;
 
-        if (IsVerificationMode)
+        var box = await _storageService.GetBoxByCodeAsync(codeToSearch);
+        if (box == null)
         {
-            if (CurrentBox == null)
-            {
-                StatusMessage = "Najpierw zeskanuj karton, aby wejść w tryb weryfikacji.";
-            }
-            else
-            {
-                IncrementProductQuantity(codeToSearch);
-                await _storageService.UpdateBoxAsync(CurrentBox);
-                await RefreshCurrentBox(CurrentBox.BoxCode);
-            }
+            StatusMessage = $"Błąd: Karton {codeToSearch} nie istnieje.";
         }
         else
         {
-            var box = await _storageService.GetBoxByCodeAsync(codeToSearch);
-            if (box == null)
-            {
-                StatusMessage = $"Błąd: Karton {codeToSearch} nie istnieje.";
-            }
-            else
-            {
-                CurrentBox = box;
-                SubscribeToItemsChanges(); 
-                StatusMessage = $"Otwarto karton: {codeToSearch}";
+            CurrentBox = box;
+            SubscribeToItemsChanges(); 
+            StatusMessage = $"Otwarto karton: {codeToSearch}";
 
-                if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
-                RecentScans.Insert(0, codeToSearch);
-                if (RecentScans.Count > 5) RecentScans.RemoveAt(5);
-            }
+            if (RecentScans.Contains(codeToSearch)) RecentScans.Remove(codeToSearch);
+            RecentScans.Insert(0, codeToSearch);
+            if (RecentScans.Count > 5) RecentScans.RemoveAt(5);
         }
 
         WeakReferenceMessenger.Default.Send(new FocusScannerMessage());
     }
 
-    [RelayCommand]
-    private async Task EditQuantity(Item item)
-    {
-        if (!IsEditable || CurrentBox == null) return;
-        
-        string? result = await Shell.Current.DisplayPromptAsync("Edytuj", "Podaj nową ilość", initialValue: item.Quantity.ToString(), keyboard: Keyboard.Numeric);
-        
-        if (int.TryParse(result, out int newQty))
-        {
-            int oldQty = item.Quantity;
-            item.Quantity = newQty;
-            await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta");
-            await _storageService.UpdateBoxAsync(CurrentBox);
-            await RefreshCurrentBox(CurrentBox.BoxCode);
-        }
-    }
-
+    /// <summary>Otwiera menu kontekstowe (popup) dla wybranego przedmiotu (braki, uszkodzenia, notatki, edycja).</summary>
     [RelayCommand]
     private async Task OpenIssuePopup(Item item)
     {
@@ -224,12 +163,12 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
                     if (!confirm) return;
 
                     CurrentBox.Items.Remove(item);
-                    await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.ProductSku, oldQty, 0, "Usunięcie produktu (ilość 0)");
+                    await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.CodeOrIdGraffiti, oldQty, 0, "Usunięcie produktu (ilość 0)");
                 }
                 else
                 {
                     item.Quantity = newQty;
-                    await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.ProductSku, oldQty, newQty, "Manualna korekta ilości");
+                    await _storageService.LogAuditAsync(CurrentBox.BoxCode, item.CodeOrIdGraffiti, oldQty, newQty, "Manualna korekta ilości");
                 }
 
                 await _storageService.UpdateBoxAsync(CurrentBox);
@@ -268,6 +207,7 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
         }
     }
 
+    /// <summary>Uruchamia widok podsumowania weryfikacji.</summary>
     [RelayCommand]
     private async Task StartVerification()
     {
@@ -277,11 +217,11 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
             return;
         }
 
-        // Poprawiono: przekazujemy tylko 'this' (ViewModel)
         var popup = new VerificationSummaryPopup(this);
         await Shell.Current.CurrentPage.ShowPopupAsync(popup);
     }
 
+    /// <summary>Zamyka aktywny karton po spełnieniu wszystkich warunków weryfikacji.</summary>
     [RelayCommand]
     private async Task CloseBoxAsync()
     {
@@ -305,6 +245,7 @@ public partial class SearchViewModel(IStorageService storageService) : Observabl
         }
     }
 
+    /// <summary>Ponownie otwiera zamknięty karton (zmienia status na w trakcie kompletacji).</summary>
     [RelayCommand]
     private async Task ReopenBoxAsync()
     {

@@ -2,6 +2,10 @@ using MagazynApp.Model;
 
 namespace MagazynApp.Services;
 
+/// <summary>
+/// Interfejs definiujący kontrakt dla serwisu magazynowego (StorageService).
+/// Umożliwia łatwe testowanie jednostkowe oraz wstrzykiwanie zależności (DI).
+/// </summary>
 public interface IStorageService
 {
     Task<Box?> GetBoxByCodeAsync(string boxCode);

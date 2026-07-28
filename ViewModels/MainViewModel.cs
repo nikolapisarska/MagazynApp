@@ -13,14 +13,24 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
 {
     private readonly IStorageService _storageService = storageService;
 
+    // Tekst wpisany/zeskanowany w polu wejściowym
     [ObservableProperty] private string _scanInput = string.Empty;
+    
+    // Komunikat informacyjny wyświetlany użytkownikowi
     [ObservableProperty] private string _statusMessage = "Zeskanuj kod kartonu, aby rozpocząć lub wyszukać";
+    
+    // Ostatnio znaleziony produkt
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsProductVisible))] private Product? _foundProduct;
+    
+    // Kod kartonu przekazany w parametrach nawigacji
     [ObservableProperty] private string? _boxCodeToLoad;
 
+    // Określa, czy panel/informacje o produkcie powinny być widoczne
     public bool IsProductVisible => FoundProduct != null;
 
     private Box? _currentBox;
+    
+    // Aktualnie obsługiwany karton w magazynie
     public Box? CurrentBox 
     {
         get => _currentBox;
@@ -34,15 +44,19 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         }
     }
 
+    // Informuje, czy karton jest aktualnie otwarty/wybrany
     public bool IsBoxOpen => CurrentBox != null;
     
+    // Określa, czy karton można modyfikować (nie jest wysłany ani zamknięty)
     public bool IsEditable => CurrentBox != null && 
                               CurrentBox.Status != BoxStatus.Sent && 
                               CurrentBox.Status != BoxStatus.Closed &&
                               !CurrentBox.IsClosed;
 
+    // Kolekcja pozycji (produktów) znajdujących się w bieżącym kartonie
     public ObservableCollection<Item> CurrentItems { get; } = [];
 
+    // Metoda wywoływana automatycznie, gdy zmieni się kod kartonu do wczytania z zewnątrz
     partial void OnBoxCodeToLoadChanged(string? value)
     {
         if (!string.IsNullOrEmpty(value))
@@ -52,6 +66,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         }
     }
 
+    // Komenda odpowiedzialna za eksport danych (produktów lub kartonów) do pliku JSON
     [RelayCommand]
     private async Task ExportDataAsync()
     {
@@ -79,6 +94,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         catch (Exception ex) { await Shell.Current.DisplayAlertAsync("Błąd", ex.Message, "OK"); }
     }
 
+    // Komenda odpowiedzialna za import danych z pliku JSON do bazy danych aplikacji
     [RelayCommand]
     private async Task ImportDataAsync()
     {
@@ -101,6 +117,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         catch (Exception ex) { await Shell.Current.DisplayAlertAsync("Błąd", ex.Message, "OK"); }
     }
 
+    // Główna logika obsługi skanera (rozpoznaje, czy zeskanowano produkt, czy kod kartonu)
     [RelayCommand]
     public async Task ProcessScanAsync()
     {
@@ -108,6 +125,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         string scannedCode = ScanInput.Trim();
         ScanInput = string.Empty;
 
+        // Krok 1: Sprawdź, czy zeskanowany kod to produkt
         var product = await _storageService.GetProductByCodeAsync(scannedCode);
         if (product != null)
         {
@@ -120,19 +138,27 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
                     return;
                 }
 
-                var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == product.CodeOrIdGraffiti);
+                // Sprawdź, czy produkt już jest na liście w kartonie – jeśli tak, zwiększ ilość, jeśli nie – dodaj nowy
+                // Sprawdź, czy produkt już jest na liście w kartonie – po nowym polu CodeOrIdGraffiti
+                var existingItem = CurrentItems.FirstOrDefault(i => i.CodeOrIdGraffiti == product.CodeOrIdGraffiti);
                 if (existingItem != null) 
                 {
                     existingItem.Quantity += 1;
                 }
                 else
                 {
-                    var newItem = new Item { ProductId = product.CodeOrIdGraffiti, ProductSku = product.CodeOrIdGraffiti, ProductName = product.Name, Quantity = 1 };
+                    var newItem = new Item 
+                    { 
+                        CodeOrIdGraffiti = product.CodeOrIdGraffiti, 
+                        ProductName = product.Name, 
+                        Quantity = 1 
+                    };
                     CurrentItems.Add(newItem);
                     CurrentBox.Items.Add(newItem);
                     UpdateListIndices();
                 }
 
+                // Jeśli karton miał status "Nowy", zmień go na "W trakcie"
                 if (CurrentBox.Status == BoxStatus.New)
                 {
                     CurrentBox.Status = BoxStatus.InProgress;
@@ -148,6 +174,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
             return;
         }
 
+        // Krok 2: Sprawdź, czy zeskanowany kod to istniejący karton
         var existingBox = await _storageService.GetBoxByCodeAsync(scannedCode);
         if (existingBox != null)
         {
@@ -163,11 +190,13 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
             return; 
         }
 
+        // Krok 3: Jeśli kod nie pasuje do niczego, utwórz nowy karton
         var box = await _storageService.GetOrCreateBoxAsync(scannedCode);
         SetCurrentBox(box);
         StatusMessage = $"Otwarto karton: {scannedCode}. Status: {CurrentBox?.Status}";
     }
 
+    // Komenda zapisująca bieżący karton i czyszcząca ekran do kolejnego skanowania
     [RelayCommand]
     public async Task SaveAndReturnAsync()
     {
@@ -182,6 +211,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         StatusMessage = $"Zapisano karton {codeToReturn}. Możesz kontynuować skanowanie.";
     }
 
+    // Komenda usuwająca wybrany produkt z listy w aktualnym kartonie
     [RelayCommand]
     private async Task RemoveItem(Item item)
     {
@@ -193,6 +223,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         await SaveCurrentBoxInternal();
     }
 
+    // Prywatna metoda pomocnicza zapisująca stan bieżącego kartonu w usłudze magazynowej
     private async Task SaveCurrentBoxInternal()
     {
         if (CurrentBox != null) 
@@ -203,6 +234,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         }
     }
 
+    // Aktualizuje numery porządkowe (Lp.) oraz flagę parzystości wierszy dla interfejsu
     private void UpdateListIndices()
     {
         for (int i = 0; i < CurrentItems.Count; i++) 
@@ -212,6 +244,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         }
     }
 
+    // Wczytuje i ustawia karton na podstawie przekazanego kodu tekstowego
     private async void LoadBoxByCode(string boxCode)
     {
         var box = await _storageService.GetBoxByCodeAsync(boxCode);
@@ -222,6 +255,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         }
     }
 
+    // Przypisuje karton do zmiennej głównej i odświeża powiązane kolekcje
     private void SetCurrentBox(Box box)
     {
         CurrentBox = box;
@@ -230,6 +264,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         FoundProduct = null;
     }
     
+    // Komenda importująca listę produktów bezpośrednio do otwartego kartonu z pliku JSON
     [RelayCommand]
     private async Task ImportItemsToBoxAsync()
     {
@@ -251,7 +286,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
             {
                 foreach (var importedItem in importedItems)
                 {
-                    var existingItem = CurrentItems.FirstOrDefault(i => i.ProductSku == importedItem.ProductSku);
+                    var existingItem = CurrentItems.FirstOrDefault(i => i.CodeOrIdGraffiti == importedItem.CodeOrIdGraffiti);
                     if (existingItem != null)
                         existingItem.Quantity += importedItem.Quantity;
                     else
@@ -269,6 +304,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         }
     }
 
+    // Komenda powrotu do głównego pulpitu (Dashboardu) z automatycznym zapisem stanu
     [RelayCommand]
     private async Task GoBackAsync()
     {
@@ -276,6 +312,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         await Shell.Current.GoToAsync("///DashboardPage");
     }
 
+    // Odświeża lokalną kolekcję elementów widoku nową listą produktów
     private void ReloadItems(IEnumerable<Item> newItems)
     {
         CurrentItems.Clear();
@@ -283,6 +320,7 @@ public partial class MainViewModel(IStorageService storageService) : ObservableO
         UpdateListIndices();
     }
 
+    // Komenda przechodząca do widoku weryfikacji zawartości aktualnego kartonu
     [RelayCommand]
     private async Task GoToVerificationAsync()
     {
